@@ -1,8 +1,5 @@
 package io.github.tgeng.zealot.tt
 
-import scala.Conversion
-import scala.language.implicitConversions
-
 enum Term {
   case Var(idx: Int) extends Term
   case Val(value: Value) extends Term
@@ -14,7 +11,7 @@ enum NormalForm {
   case Val(value: Value) extends NormalForm
 }
 
-given Conversion[NormalForm, Term] = nf => nf match {
+def (nf: NormalForm) term = nf match {
   case NormalForm.Neu(neu) => neutralToTerm(neu)
   case NormalForm.Val(value) => Term.Val(value)
 }
@@ -51,7 +48,10 @@ enum Redux[T] {
   case Prj2(pair: T) extends Redux[T]
 }
 
-def (t: Term) raise(amount: Int = 1, bar: Int = 0) = 
+def (t: Term) raise(amount: Int, bar: Int) = 
+  t.raised(given RaiseSpec(amount, bar))
+
+def (t: NormalForm) raise(amount: Int, bar: Int) = 
   t.raised(given RaiseSpec(amount, bar))
 
 
@@ -91,9 +91,8 @@ private def [T](r: Redux[T]) raised(tRaiser: T => (given RaiseSpec) => T)(given 
 private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
   case Term.Var(i) => 
     if (i == spec.targetIndex) 
-      // Implicit conversion to `Term` happens here. It's less efficient than it should have been.
       // TODO(tgeng): figure out how to do it better while keeping it clean.
-      spec.substitute 
+      spec.substitute.term
     else t
   case Term.Val(v) => Term.Val(v.substituted)
   case Term.Rdx(r) => Term.Rdx(r.substituted)
