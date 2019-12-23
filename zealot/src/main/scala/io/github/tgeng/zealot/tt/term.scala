@@ -6,25 +6,9 @@ enum Term {
   case Rdx(rdx: Redux[Term]) extends Term
 }
 
-enum NormalForm {
-  case Neu(neu: Neutral) extends NormalForm
-  case Val(value: Value) extends NormalForm
-}
-
-def (nf: NormalForm) term = nf match {
-  case NormalForm.Neu(neu) => neutralToTerm(neu)
-  case NormalForm.Val(value) => Term.Val(value)
-}
-
-private def neutralToTerm(n: Neutral) : Term = n match {
-  case Neutral.Var(i) => Term.Var(i)
-  case Neutral.Rdx(rdx) => Term.Rdx(map(neutralToTerm)(rdx))
-}
-
-private def map[F, T](mapper: F => T)(input: Redux[F]) : Redux[T] = input match {
-  case Redux.App(fn, arg) => Redux.App(mapper(fn), arg)
-  case Redux.Prj1(pair) => Redux.Prj1(mapper(pair))
-  case Redux.Prj2(pair) => Redux.Prj2(mapper(pair))
+enum Whnf {
+  case Neu(neu: Neutral) extends Whnf
+  case Val(value: Value) extends Whnf
 }
 
 enum Neutral {
@@ -48,15 +32,26 @@ enum Redux[T] {
   case Prj2(pair: T) extends Redux[T]
 }
 
+private def neutralToTerm(n: Neutral) : Term = n match {
+  case Neutral.Var(i) => Term.Var(i)
+  case Neutral.Rdx(rdx) => Term.Rdx(map(neutralToTerm)(rdx))
+}
+
+private def map[F, T](mapper: F => T)(input: Redux[F]) : Redux[T] = input match {
+  case Redux.App(fn, arg) => Redux.App(mapper(fn), arg)
+  case Redux.Prj1(pair) => Redux.Prj1(mapper(pair))
+  case Redux.Prj2(pair) => Redux.Prj2(mapper(pair))
+}
+
 def (t: Term) raise(amount: Int, bar: Int) = 
   t.raised(given RaiseSpec(amount, bar))
 
-def (t: NormalForm) raise(amount: Int, bar: Int) = 
+def (t: Whnf) raise(amount: Int, bar: Int) = 
   t.raised(given RaiseSpec(amount, bar))
 
 
-def (t: Term) substitute(targetIndex: Int, substitute: NormalForm) = 
-  t.substituted(given SubstituteSpec(targetIndex: Int, substitute: NormalForm))
+def (t: Term) substitute(targetIndex: Int, substitute: Term) = 
+  t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
 
 private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
   case Term.Var(i) => if (i >= spec.bar) Term.Var(i + spec.amount) else t
@@ -64,9 +59,9 @@ private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
   case Term.Rdx(r) => Term.Rdx(r.raised{ _.raised })
 }
 
-private def (nf: NormalForm) raised(given spec: RaiseSpec): NormalForm = nf match {
-  case NormalForm.Neu(n) => NormalForm.Neu(n.raised)
-  case NormalForm.Val(v) => NormalForm.Val(v.raised)
+private def (nf: Whnf) raised(given spec: RaiseSpec): Whnf = nf match {
+  case Whnf.Neu(n) => Whnf.Neu(n.raised)
+  case Whnf.Val(v) => Whnf.Val(v.raised)
 }
 
 private def (n: Neutral) raised(given spec: RaiseSpec): Neutral = n match {
@@ -91,8 +86,7 @@ private def [T](r: Redux[T]) raised(tRaiser: T => (given RaiseSpec) => T)(given 
 private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
   case Term.Var(i) => 
     if (i == spec.targetIndex) 
-      // TODO(tgeng): figure out how to do it better while keeping it clean.
-      spec.substitute.term
+      spec.substitute
     else t
   case Term.Val(v) => Term.Val(v.substituted)
   case Term.Rdx(r) => Term.Rdx(r.substituted)
@@ -116,6 +110,6 @@ private case class RaiseSpec(amount: Int, bar: Int) {
   def ++ = RaiseSpec(amount, bar + 1)
 }
 
-private case class SubstituteSpec(targetIndex: Int, substitute: NormalForm) {
+private case class SubstituteSpec(targetIndex: Int, substitute: Term) {
   def ++ = SubstituteSpec(targetIndex + 1, substitute.raised(given RaiseSpec(1, 0)))
 }

@@ -38,4 +38,5 @@ class WhnfTest {
     p1((lam(100), 4 x 5)) ~~> lam(100)
     p2((lam(100), 4 x 5)) ~~> (4 x 5)
   }
+  // TODO(tgeng): add more complicated terms
 }
