@@ -46,8 +46,8 @@ private def map[F, T](mapper: F => T)(input: Redux[F]) : Redux[T] = input match 
 def (t: Term) raise(amount: Int, bar: Int) = 
   t.raised(given RaiseSpec(amount, bar))
 
-def (t: Whnf) raise(amount: Int, bar: Int) = 
-  t.raised(given RaiseSpec(amount, bar))
+// def (t: Whnf) raise(amount: Int, bar: Int) = 
+//   t.raised(given RaiseSpec(amount, bar))
 
 
 def (t: Term) substitute(targetIndex: Int, substitute: Term) = 
@@ -59,15 +59,15 @@ private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
   case Term.Rdx(r) => Term.Rdx(r.raised{ _.raised })
 }
 
-private def (nf: Whnf) raised(given spec: RaiseSpec): Whnf = nf match {
-  case Whnf.Neu(n) => Whnf.Neu(n.raised)
-  case Whnf.Val(v) => Whnf.Val(v.raised)
-}
+// private def (nf: Whnf) raised(given spec: RaiseSpec): Whnf = nf match {
+//   case Whnf.Neu(n) => Whnf.Neu(n.raised)
+//   case Whnf.Val(v) => Whnf.Val(v.raised)
+// }
 
-private def (n: Neutral) raised(given spec: RaiseSpec): Neutral = n match {
-  case Neutral.Var(i) => if (i >= spec.bar) Neutral.Var(i+1) else n
-  case Neutral.Rdx(r) => Neutral.Rdx(r.raised { _.raised })
-}
+// private def (n: Neutral) raised(given spec: RaiseSpec): Neutral = n match {
+//   case Neutral.Var(i) => if (i >= spec.bar) Neutral.Var(i+1) else n
+//   case Neutral.Rdx(r) => Neutral.Rdx(r.raised { _.raised })
+// }
 
 private def (v: Value) raised(given spec: RaiseSpec) : Value = v match {
   case Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))
