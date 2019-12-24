@@ -38,5 +38,12 @@ class WhnfTest {
     p1((lam(100), 4 x 5)) ~~> lam(100)
     p2((lam(100), 4 x 5)) ~~> (4 x 5)
   }
-  // TODO(tgeng): add more complicated terms
+
+  @Test
+  def `more convoluted cases` = {
+    val apply = lam(lam(1(0)))
+    val extractFirst = lam(p1(0))
+    val pair = t(100, 200)
+    apply(extractFirst)(pair) ~~> 100
+  }
 }

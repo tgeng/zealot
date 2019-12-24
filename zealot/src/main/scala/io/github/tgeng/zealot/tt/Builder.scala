@@ -1,7 +1,7 @@
 package io.github.tgeng.zealot.tt
 
 object Builder {
-  def term(t: Term) = t
+  def t(t: Term) = t
 
   given intToVar : Conversion[Int, Term] = i => Term.Var(i)
   
