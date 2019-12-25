@@ -17,7 +17,7 @@ enum Neutral {
 }
 
 enum Value {
-  case Set(id: Int) extends Value
+  case Set(level: Int) extends Value
   case Pi(dom: Term, cod: Term) extends Value
   case Lam(body: Term) extends Value
   case Sig(fstTy: Term, sndTy: Term) extends Value

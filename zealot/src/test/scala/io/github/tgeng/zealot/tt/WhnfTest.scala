@@ -40,6 +40,15 @@ class WhnfTest {
   }
 
   @Test
+  def `does not reduce under head` = {
+    (p1((1, 2)) -> 4) ~~> (p1((1, 2)) -> 4)
+    (p1((1, 2)) x 4) ~~> (p1((1, 2)) x 4)
+    lam(p1((1, 2))) ~~> lam(p1((1, 2)))
+    t((p1((1, 2)), 1)) ~~> t((p1((1, 2)), 1))
+    100(p1((1,2))) ~~> 100(p1((1,2)))
+  }
+
+  @Test
   def `more convoluted cases` = {
     val apply = lam(lam(1(0)))
     val extractFirst = lam(p1(0))

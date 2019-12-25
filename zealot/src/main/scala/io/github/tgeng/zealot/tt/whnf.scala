@@ -9,10 +9,8 @@ def (t: Term) whnf : Whnf = t match {
     case Redux.App(fn, arg) => fn.whnf match {
       case Whnf.Neu(n) => Whnf.Neu(Neutral.Rdx(Redux.App(n, arg)))
       case Whnf.Val(v) => {
-        // TODO(tgeng): figure out how to do it better while keeping it clean.
-        val normalArg = arg.whnf.term
         v match {
-          case Value.Lam(body) => body.substitute(0, normalArg.raise(1, 0)).raise(-1, 0).whnf
+          case Value.Lam(body) => body.substitute(0, arg.raise(1, 0)).raise(-1, 0).whnf
           case _ => throw EvalStuckException(s"Expected $v to be a function.")
         }
       }

@@ -6,7 +6,7 @@ def haveWhnf(target: Term) = {
   Assertion[Term](
     t => {
       val whnf = t.whnf.term
-      (s"normalize to\n  ${target}\nbut it normalizes to\n  $whnf", whnf == target)
+      (s"have weak head normal form\n  ${target}\nbut it has\n  $whnf", whnf == target)
     },
     true)
 }
