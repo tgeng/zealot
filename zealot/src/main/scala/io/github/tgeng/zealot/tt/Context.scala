@@ -6,7 +6,7 @@ type Type = Whnf
 
 class Context(content: ArrayBuffer[Type]) {
 
-  def apply(i: Int) : Type = content(content.size - i - 1)
+  def apply(i: Int) : Option[Type] = if (i < 0 || i >= content.size) Option.empty else Option(content(content.size - i - 1))
   def append(ty: Type) = content.append(ty)
   def dropLast() = content.dropRightInPlace(1)
 }

@@ -49,6 +49,7 @@ def (t: Term) raise(amount: Int, bar: Int) =
 // def (t: Whnf) raise(amount: Int, bar: Int) = 
 //   t.raised(given RaiseSpec(amount, bar))
 
+def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute).raise(-1, 0)
 
 def (t: Term) substitute(targetIndex: Int, substitute: Term) = 
   t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
