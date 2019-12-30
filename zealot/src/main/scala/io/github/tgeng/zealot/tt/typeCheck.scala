@@ -1,6 +1,8 @@
 package io.github.tgeng.zealot.tt
 
 import scala.math.max
+import scala.language.implicitConversions
+import io.github.tgeng.zealot.tt.Builder.{given, _}
 import io.github.tgeng.zealot.tt.Neutral._
 import io.github.tgeng.zealot.tt.Redux._
 import io.github.tgeng.zealot.tt.Value._
@@ -76,11 +78,61 @@ private def (t: Whnf) inferType()(given ctx: Context) : Either[TypeCheckError, W
 }
 
 def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
-  throw UnsupportedOperationException()
+  def raiseError() = Left(TypeCheckError("$a is not a subtype of $b"))
+  (a, b) match {
+    case (Val(Set(iA)), Val(Set(iB))) => if (iA < iB) Right(()) else raiseError()
+    case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
+      _ <- (argTyA.whnf ~= argTyB.whnf)(Val(Set(-1)))
+      _ <- (ctx :: argTyA.whnf) { () =>
+        bodyTyA.whnf <= bodyTyB.whnf
+      }
+    } yield ()
+    case (Val(Sig(aTyA, bTyA)), Val(Sig(aTyB, bTyB))) => for {
+      _ <- (aTyA.whnf ~= aTyB.whnf)(Val(Set(-1)))
+      _ <- (ctx :: aTyA.whnf) { () =>
+        bTyA.whnf <= bTyB.whnf
+      }
+    } yield ()
+    case (_, _) => (a ~= b)(Val(Set(-1)))
+  }
 }
 
 def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[TypeCheckError, Unit] = {
-  throw UnsupportedOperationException()
+  def raiseError() = Left(TypeCheckError("$a and $b are not convertible"))
+  if (a == b) return Right(())
+  (ty, a, b) match {
+    case (Val(Set(_)), Val(Set(lA)), Val(Set(lB))) => 
+      if (lA == lB) Right(()) 
+      else raiseError()
+    case (Val(Set(_)), Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => {
+      val argTyAWhnf = argTyA.whnf
+      for {
+        _ <- (argTyAWhnf ~= argTyB.whnf)(ty)
+        _ <- (ctx :: argTyAWhnf) { () =>
+          (bodyTyA.whnf ~= bodyTyB.whnf)(ty)
+        }
+      } yield ()
+    }
+    case (Val(Set(_)), Val(Sig(aTyA, bTyA)), Val(Sig(aTyB, bTyB))) => {
+      val aTyAWhnf = aTyA.whnf
+      for {
+        _ <- (aTyAWhnf ~= aTyB.whnf)(ty)
+        _ <- (ctx :: aTyAWhnf) { () =>
+          (bTyA.whnf ~= bTyB.whnf)(ty)
+        }
+      } yield ()
+    }
+    case (Val(Unit), _, _) => Right(())
+    case (Val(Pi(argTy, bodyTy)), _, _) => (ctx :: argTy.whnf) { () =>
+      ((a.term)(0).whnf ~= (b.term)(0).whnf)(bodyTy.whnf)
+    }
+    case (Val(Sig(aTy, bTy)), _, _) => for {
+      _ <- (p1(a.term).whnf ~= p1(b.term).whnf)(aTy.whnf)
+      _ <- (p2(a.term).whnf ~= p2(b.term).whnf)(bTy.substituteOutmost(a.term).whnf)
+    } yield ()
+    case (_, Neu(nA), Neu(nB)) => (nA === nB).map { _ => ()}
+    case _ => raiseError()
+  }
 }
 
 def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = (a, b) match {
