@@ -20,7 +20,7 @@ private def (t: Whnf) checkType(ty: Type)(given ctx: Context) : Either[TypeCheck
     val aTyWhnf = aTy.whnf
     for {
       _ <- a.whnf.checkType(aTyWhnf)
-      result <- b.whnf.checkType(bTy.substituteOutmost(aTyWhnf.term).whnf)
+      result <- b.whnf.checkType(bTy.substituteOutmost(a).whnf)
     } yield result
   }
   case _ => for {
@@ -51,7 +51,7 @@ private def (t: Whnf) inferType()(given ctx: Context) : Either[TypeCheckError, W
         pairTy <- Neu(pair).inferType()
         sig <- pairTy.checkSigType()
         (aTy, bTy) = sig
-      } yield bTy.substituteOutmost(aTy).whnf
+      } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pair).term))).whnf
     }
   }
   case Val(v) => v match {
@@ -62,18 +62,56 @@ private def (t: Whnf) inferType()(given ctx: Context) : Either[TypeCheckError, W
         bodyTyTy <- bodyTy.whnf.inferType()
         bodyLevel <- bodyTyTy.checkSetType()
       } yield Val(Set(max(argLevel, bodyLevel)))
-      case Lam => Left(TypeCheckError("cannot infer type of lam"))
+      case Lam(_) => Left(TypeCheckError("cannot infer type of lam"))
       case Sig(aTy, bTy) => for {
         aTyTy <- aTy.whnf.inferType()
         aLevel <- aTyTy.checkSetType()
         bTyTy <- bTy.whnf.inferType()
         bLevel <- bTyTy.checkSetType()
       } yield Val(Set(max(aLevel, bLevel)))
-      case Pair => Left(TypeCheckError("cannot infer type of pair"))
+      case Pair(_, _) => Left(TypeCheckError("cannot infer type of pair"))
       case Unit => Right(Val(Set(0)))
       case Star => Right(Val(Unit))
   }
 }
+
+def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
+  throw UnsupportedOperationException()
+}
+
+def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[TypeCheckError, Unit] = {
+  throw UnsupportedOperationException()
+}
+
+def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = (a, b) match {
+  case (Var(aI), Var(bI)) => 
+  if (aI == bI) {
+    Neu(a).inferType()
+  } else {
+    Left(TypeCheckError(s"$a and $b are not convertible"))
+  }
+  case (Rdx(App(aFn, aArg)), Rdx(App(bFn, bArg))) => for {
+    fnTy <- aFn === bFn
+    pi <- fnTy.checkPiType()
+    (argTy, bodyTy) = pi
+    _ <- (aArg.whnf ~= bArg.whnf)(argTy.whnf)
+  } yield bodyTy.substituteOutmost(aArg).whnf
+  case (Rdx(Prj1(pairA)), Rdx(Prj2(pairB))) => for {
+    pairTy <- pairA === pairB
+    sig <- pairTy.checkSigType()
+    (aTy, _) = sig
+  } yield aTy.whnf
+  case (Rdx(Prj2(pairA)), Rdx(Prj2(pairB))) => for {
+    pairTy <- pairA === pairB
+    sig <- pairTy.checkSigType()
+    (aTy, bTy) = sig
+  } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pairA).term))).whnf
+  case _ => Left(TypeCheckError(s"term $a and $b are not convertible"))
+}
+
+class TypeCheckError(message: String)
+
+private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage)
 
 private def (t: Whnf) checkPiType(): Either[TypeCheckError, (Term, Term)] = t match {
   case Val(Pi(argTy, bodyTy)) => Right(argTy, bodyTy)
@@ -89,11 +127,3 @@ private def (t: Whnf) checkSetType(): Either[TypeCheckError, Int] = t match {
   case Val(Set(l)) => Right(l)
   case _ => Left(TypeCheckError(s"Expected $t to be a Set at some level."))
 }
-
-def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
-  throw UnsupportedOperationException()
-}
-
-class TypeCheckError(message: String)
-
-private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage)
