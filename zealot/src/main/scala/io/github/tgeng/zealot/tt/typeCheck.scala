@@ -88,7 +88,7 @@ private def (t: Whnf) inferType()(given ctx: Context) : Either[TypeCheckError, W
 private def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
   def raiseError() = Left(TypeCheckError(s"$a is not a subtype of $b"))
   (a, b) match {
-    case (Val(Set(iA)), Val(Set(iB))) => if (iA < iB) Right(()) else raiseError()
+    case (Val(Set(iA)), Val(Set(iB))) => if (iA <= iB) Right(()) else raiseError()
     case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
       _ <- (argTyA.whnf ~= argTyB.whnf)(Val(Set(-1)))
       _ <- (ctx :: argTyA.whnf) { () =>
@@ -143,33 +143,36 @@ private def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[Type
   }
 }
 
-private def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = (a, b) match {
-  case (Var(aI), Var(bI)) => 
-  if (aI == bI) {
-    Neu(a).inferType()
-  } else {
-    Left(TypeCheckError(s"$a and $b are not convertible"))
+private def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = {
+  def raiseError() = Left(TypeCheckError(s"neutral $a and $b are not convertible"))
+  (a, b) match {
+    case (Var(aI), Var(bI)) => 
+    if (aI == bI) {
+      Neu(a).inferType()
+    } else {
+      raiseError()
+    }
+    case (Rdx(App(aFn, aArg)), Rdx(App(bFn, bArg))) => for {
+      fnTy <- aFn === bFn
+      pi <- fnTy.checkPiType()
+      (argTy, bodyTy) = pi
+      _ <- (aArg.whnf ~= bArg.whnf)(argTy.whnf)
+    } yield bodyTy.substituteOutmost(aArg).whnf
+    case (Rdx(Prj1(pairA)), Rdx(Prj2(pairB))) => for {
+      pairTy <- pairA === pairB
+      sig <- pairTy.checkSigType()
+      (aTy, _) = sig
+    } yield aTy.whnf
+    case (Rdx(Prj2(pairA)), Rdx(Prj2(pairB))) => for {
+      pairTy <- pairA === pairB
+      sig <- pairTy.checkSigType()
+      (aTy, bTy) = sig
+    } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pairA).term))).whnf
+    case _ => raiseError()
   }
-  case (Rdx(App(aFn, aArg)), Rdx(App(bFn, bArg))) => for {
-    fnTy <- aFn === bFn
-    pi <- fnTy.checkPiType()
-    (argTy, bodyTy) = pi
-    _ <- (aArg.whnf ~= bArg.whnf)(argTy.whnf)
-  } yield bodyTy.substituteOutmost(aArg).whnf
-  case (Rdx(Prj1(pairA)), Rdx(Prj2(pairB))) => for {
-    pairTy <- pairA === pairB
-    sig <- pairTy.checkSigType()
-    (aTy, _) = sig
-  } yield aTy.whnf
-  case (Rdx(Prj2(pairA)), Rdx(Prj2(pairB))) => for {
-    pairTy <- pairA === pairB
-    sig <- pairTy.checkSigType()
-    (aTy, bTy) = sig
-  } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pairA).term))).whnf
-  case _ => Left(TypeCheckError(s"term $a and $b are not convertible"))
 }
 
-class TypeCheckError(val message: String)
+class TypeCheckError(val message: String) extends Exception(message)
 
 private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage)
 

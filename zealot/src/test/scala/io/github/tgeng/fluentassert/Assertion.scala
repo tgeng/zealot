@@ -2,7 +2,8 @@ package io.github.tgeng.fluentassert
 
 import org.junit.Assert._
 
-def [T] (subject: T) should(assertion: Assertion[T]) = assertion(subject)
+def [T] (subject: T) should(assertion: Assertion[T]) = assertion(subject, true)
+def [T] (subject: T) shouldNot(assertion: Assertion[T]) = assertion(subject, false)
 
 def equal[T](target: T) = Assertion[T] {(t, objective) => 
   if (objective && t != target) {
@@ -14,9 +15,9 @@ def equal[T](target: T) = Assertion[T] {(t, objective) =>
   }
 }
 
-class Assertion[T](failureMessage: (T, Boolean) => Option[String], objective : Boolean = true) {
+class Assertion[T](failureMessage: (T, Boolean) => Option[String]) {
 
-  def apply(subject: T) = {
+  def apply(subject: T, objective: Boolean) = {
     failureMessage(subject, objective) match {
       case None => ()
       case Some(msg) => 
@@ -27,8 +28,6 @@ class Assertion[T](failureMessage: (T, Boolean) => Option[String], objective : B
       """.stripMargin)
     }
   }
-
-  def unary_! = Assertion[T](failureMessage, !objective)
 }
 
 private def[T] (t: T) description = s"<${t.getClass.getName}> $t"
