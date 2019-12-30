@@ -8,8 +8,16 @@ import io.github.tgeng.zealot.tt.Redux._
 import io.github.tgeng.zealot.tt.Value._
 import io.github.tgeng.zealot.tt.Whnf._
 
-def (t: Term) checkType(ty: Term) : Either[TypeCheckError, Unit] = {
-  throw UnsupportedOperationException()
+def (t: Term) checkType(ty: Term)(given ctx: Context) : Either[TypeCheckError, Unit] = try {
+  t.whnf.checkType(ty.whnf)
+} catch {
+  case e: WhnfStuckException => Left(TypeCheckError(e.getMessage()))
+}
+
+def (t: Term) inferType()(given ctx: Context) : Either[TypeCheckError, Type] = try {
+  t.whnf.inferType()
+} catch {
+  case e: WhnfStuckException => Left(TypeCheckError(e.getMessage()))
 }
 
 private def (t: Whnf) checkType(ty: Type)(given ctx: Context) : Either[TypeCheckError, Unit] = (t, ty) match {
@@ -77,8 +85,8 @@ private def (t: Whnf) inferType()(given ctx: Context) : Either[TypeCheckError, W
   }
 }
 
-def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
-  def raiseError() = Left(TypeCheckError("$a is not a subtype of $b"))
+private def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] = {
+  def raiseError() = Left(TypeCheckError(s"$a is not a subtype of $b"))
   (a, b) match {
     case (Val(Set(iA)), Val(Set(iB))) => if (iA < iB) Right(()) else raiseError()
     case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
@@ -97,8 +105,8 @@ def (a: Whnf) <= (b: Whnf) (given ctx: Context) : Either[TypeCheckError, Unit] =
   }
 }
 
-def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[TypeCheckError, Unit] = {
-  def raiseError() = Left(TypeCheckError("$a and $b are not convertible"))
+private def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[TypeCheckError, Unit] = {
+  def raiseError() = Left(TypeCheckError(s"$a and $b are not convertible"))
   if (a == b) return Right(())
   (ty, a, b) match {
     case (Val(Set(_)), Val(Set(lA)), Val(Set(lB))) => 
@@ -135,7 +143,7 @@ def (a: Whnf) ~= (b: Whnf) (ty: Type) (given ctx: Context) : Either[TypeCheckErr
   }
 }
 
-def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = (a, b) match {
+private def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, Type] = (a, b) match {
   case (Var(aI), Var(bI)) => 
   if (aI == bI) {
     Neu(a).inferType()
@@ -161,7 +169,7 @@ def (a: Neutral) === (b: Neutral) (given ctx: Context) : Either[TypeCheckError, 
   case _ => Left(TypeCheckError(s"term $a and $b are not convertible"))
 }
 
-class TypeCheckError(message: String)
+class TypeCheckError(val message: String)
 
 private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage)
 

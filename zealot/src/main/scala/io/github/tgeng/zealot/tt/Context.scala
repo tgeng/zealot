@@ -4,8 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 
 type Type = Whnf
 
-class Context(content: ArrayBuffer[Type]) {
-
+class Context(content: ArrayBuffer[Type] = ArrayBuffer()) {
   def apply(i: Int) : Option[Type] = if (i < 0 || i >= content.size) Option.empty else Option(content(content.size - i - 1))
   def append(ty: Type) = content.append(ty)
   def dropLast() = content.dropRightInPlace(1)
