@@ -5,7 +5,7 @@ import scala.collection.immutable.Seq
 class WhnfStuckException(val message: String, val errorContext: ErrorContext) extends Exception(message) {}
 
 def (t: Term) whnf(given errCtx: ErrorContext): Whnf = t match {
-  case Term.Var(i) => Whnf.Neu(Neutral.Var(i))
+  case Term.Ref(r) => Whnf.Neu(Neutral.Ref(r))
   case Term.Val(v) => Whnf.Val(v)
   case Term.Rdx(r) => r match {
     case Redux.App(fn, arg) => fn.whnf match {

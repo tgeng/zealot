@@ -3,7 +3,7 @@ package io.github.tgeng.zealot.tt
 object Builder {
   def t(t: Term) = t
 
-  def (index: Int) unary_! : Term = Term.Var(index)
+  def (index: Int) unary_! : Term = Term.Ref(Reference.Idx(index))
   
   def set(id: Int) = Term.Val(Value.Set(id))
   

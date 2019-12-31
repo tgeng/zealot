@@ -6,6 +6,7 @@ import scala.collection.immutable.Seq
 import io.github.tgeng.zealot.tt.Builder.{given, _}
 import io.github.tgeng.zealot.tt.Neutral._
 import io.github.tgeng.zealot.tt.Redux._
+import io.github.tgeng.zealot.tt.Reference._
 import io.github.tgeng.zealot.tt.Value._
 import io.github.tgeng.zealot.tt.Whnf._
 
@@ -49,9 +50,9 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Infer(t))
     t match {
     case Neu(v) => v match {
-      case Var(i) => ctx(i) match {
+      case Ref(r) => ctx(r) match {
         case Some(ty) => Right(ty)
-        case empty => Left(TypeCheckError(s"Unexpected variable index $i", errCtx))
+        case empty => Left(TypeCheckError(s"Unexpected variable at reference $r", errCtx))
       }
       case Rdx(r) => r match {
         case App(fn, arg) => for {
@@ -158,12 +159,16 @@ private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx:
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.NeutralConvertible(a, b))
   def raiseError() = Left(TypeCheckError(s"neutral $a and $b are not convertible", errCtx))
   (a, b) match {
-    case (Var(aI), Var(bI)) => 
-    if (aI == bI) {
-      Neu(a).inferType()
-    } else {
-      raiseError()
-    }
+    case (Ref(aR), Ref(bR)) => 
+      if (aR == bR) {
+        Neu(a).inferType()
+      } else {
+        (aR, bR) match {
+          case (Idx(i), Num(n)) => if (ctx.isIdxEqualNum(i, n)) Neu(a).inferType() else raiseError()
+          case (Num(n), Idx(i)) => if (ctx.isIdxEqualNum(i, n)) Neu(a).inferType() else raiseError()
+          case _ => raiseError()
+        }
+      }
     case (Rdx(App(aFn, aArg)), Rdx(App(bFn, bArg))) => for {
       fnTy <- aFn === bFn
       pi <- fnTy.checkPiType()

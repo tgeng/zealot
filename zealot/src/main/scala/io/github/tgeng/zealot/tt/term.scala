@@ -1,7 +1,7 @@
 package io.github.tgeng.zealot.tt
 
 enum Term {
-  case Var(idx: Int) extends Term
+  case Ref(ref: Reference) extends Term
   case Val(value: Value) extends Term
   case Rdx(rdx: Redux[Term]) extends Term
 }
@@ -12,8 +12,14 @@ enum Whnf {
 }
 
 enum Neutral {
-  case Var(idx: Int) extends Neutral
+  case Ref(ref: Reference) extends Neutral
   case Rdx(rdx: Redux[Neutral]) extends Neutral
+}
+
+enum Reference {
+  case Idx(idx: Int)
+  // Only used internally for type checking.
+  case Num(num: Int)
 }
 
 enum Value {
@@ -33,7 +39,7 @@ enum Redux[T] {
 }
 
 private def neutralToTerm(n: Neutral) : Term = n match {
-  case Neutral.Var(i) => Term.Var(i)
+  case Neutral.Ref(ref) => Term.Ref(ref)
   case Neutral.Rdx(rdx) => Term.Rdx(map(neutralToTerm)(rdx))
 }
 
@@ -55,7 +61,8 @@ def (t: Term) substitute(targetIndex: Int, substitute: Term) =
   t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
 
 private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
-  case Term.Var(i) => if (i >= spec.bar) Term.Var(i + spec.amount) else t
+  case Term.Ref(Reference.Idx(i)) => if (i >= spec.bar) Term.Ref(Reference.Idx(i + spec.amount)) else t
+  case Term.Ref(_) => t
   case Term.Val(v) => Term.Val(v.raised)
   case Term.Rdx(r) => Term.Rdx(r.raised{ _.raised })
 }
@@ -85,10 +92,11 @@ private def [T](r: Redux[T]) raised(tRaiser: T => (given RaiseSpec) => T)(given 
 }
 
 private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
-  case Term.Var(i) => 
+  case Term.Ref(Reference.Idx(i)) => 
     if (i == spec.targetIndex) 
       spec.substitute
     else t
+  case Term.Ref(_) => t
   case Term.Val(v) => Term.Val(v.substituted)
   case Term.Rdx(r) => Term.Rdx(r.substituted)
 }
