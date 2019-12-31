@@ -55,13 +55,17 @@ def (t: Term) raise(amount: Int, bar: Int) =
 // def (t: Whnf) raise(amount: Int, bar: Int) = 
 //   t.raised(given RaiseSpec(amount, bar))
 
-def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute).raise(-1, 0)
+def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute.raise(1, 0)).raise(-1, 0) 
+
 
 def (t: Term) substitute(targetIndex: Int, substitute: Term) = 
   t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
 
 private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
-  case Term.Ref(Reference.Idx(i)) => if (i >= spec.bar) Term.Ref(Reference.Idx(i + spec.amount)) else t
+  case Term.Ref(Reference.Idx(i)) if (i >= spec.bar) => {
+    assert (i + spec.amount >= 0)
+    Term.Ref(Reference.Idx(i + spec.amount)) 
+  }
   case Term.Ref(_) => t
   case Term.Val(v) => Term.Val(v.raised)
   case Term.Rdx(r) => Term.Rdx(r.raised{ _.raised })
@@ -92,10 +96,7 @@ private def [T](r: Redux[T]) raised(tRaiser: T => (given RaiseSpec) => T)(given 
 }
 
 private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
-  case Term.Ref(Reference.Idx(i)) => 
-    if (i == spec.targetIndex) 
-      spec.substitute
-    else t
+  case Term.Ref(Reference.Idx(i)) if (i == spec.targetIndex) => spec.substitute
   case Term.Ref(_) => t
   case Term.Val(v) => Term.Val(v.substituted)
   case Term.Rdx(r) => Term.Rdx(r.substituted)

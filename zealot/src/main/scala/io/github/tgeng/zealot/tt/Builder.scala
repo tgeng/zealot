@@ -7,7 +7,7 @@ object Builder {
   
   def set(id: Int) = Term.Val(Value.Set(id))
   
-  def (a: Term) -> (b: Term) : Term = Term.Val(Value.Pi(a, b))
+  def (a: Term) ->: (b: Term) : Term = Term.Val(Value.Pi(a, b))
   
   def lam(body: Term) : Term = Term.Val(Value.Lam(body))
 

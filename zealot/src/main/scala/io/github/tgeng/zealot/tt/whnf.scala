@@ -12,7 +12,7 @@ def (t: Term) whnf(given errCtx: ErrorContext): Whnf = t match {
       case Whnf.Neu(n) => Whnf.Neu(Neutral.Rdx(Redux.App(n, arg)))
       case Whnf.Val(v) => {
         v match {
-          case Value.Lam(body) => body.substituteOutmost(arg.raise(1, 0)).whnf
+          case Value.Lam(body) => body.substituteOutmost(arg).whnf
           case _ => throw WhnfStuckException(s"Expected $v to be a function.", errCtx)
         }
       }
