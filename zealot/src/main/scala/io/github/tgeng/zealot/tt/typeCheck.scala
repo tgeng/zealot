@@ -143,7 +143,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
     }
     case (Val(Unit), _, _) => Right(())
     case (Val(Pi(argTy, bodyTy)), _, _) => (ctx :: argTy.whnf) { () =>
-      ((a.term)(0).whnf ~= (b.term)(0).whnf)(bodyTy.whnf)
+      ((a.term)(!0).whnf ~= (b.term)(!0).whnf)(bodyTy.whnf)
     }
     case (Val(Sig(aTy, bTy)), _, _) => for {
       _ <- (p1(a.term).whnf ~= p1(b.term).whnf)(aTy.whnf)

@@ -33,7 +33,7 @@ class TypeCheckTest {
 
   @Test
   def `more lambda type check` = {
-    lam(0) :< (set(0) -> set(0))
+    lam(!0) :< (set(0) -> set(0))
     // lam(lam(0)) :< (set(0) -> (0 -> 1))
   }
 }
