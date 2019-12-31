@@ -1,8 +1,12 @@
 package io.github.tgeng.zealot.tt
 
+import scala.collection.immutable.Seq
+import io.github.tgeng.zealot.tt.TypeCheckOps._
+import io.github.tgeng.zealot.tt.ErrorContext
 import io.github.tgeng.fluentassert._
 
 def haveWhnf(target: Term) = Assertion[Term]{ (t, objective) =>
+  given errCtx : ErrorContext = Seq.empty
   val whnf = t.whnf.term
   if (objective && whnf != target) {
     Some(s"to have weak head normal form\n  $target\nbut it has\n  $whnf")
@@ -40,7 +44,18 @@ def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)
 def (t1: Term) :< (t2: Term)(given ctx: Context) = t1 should checkWithType(t2)
 def (t1: Term) :> (t2: Term)(given ctx: Context) = t1 should haveInferredType(t2)
 
-def (e: Exception) messageWithStackTrace(indent: Int) = {
+def (e: TypeCheckError) messageWithStackTrace(indent: Int) = {
   val indentString = " " * indent
-  e.getMessage + "\n" + e.getStackTrace.map{ indentString + _ }.mkString("\n")
+  List(indentString + e.getMessage)
+    .concat(
+      e.errorContext.reverse.map{ op => 
+        op match {
+          case Check(t, ty) => s"checking $t against type $ty"
+          case Infer(t) => s"inferring type of $t"
+          case Subtype(a, b) => s"checking $a <= $b"
+          case TermConvertible(a, b, ty) => s"checking $a ~= $b : $ty"
+          case NeutralConvertible(a, b) => s"checking $a === $b"
+        }
+      }.map(indentString + "when " + _)
+    ).mkString("\n")
 }

@@ -1,8 +1,10 @@
 package io.github.tgeng.zealot.tt
 
-class WhnfStuckException(message: String) extends Exception(message) {}
+import scala.collection.immutable.Seq
 
-def (t: Term) whnf : Whnf = t match {
+class WhnfStuckException(val message: String, val errorContext: ErrorContext) extends Exception(message) {}
+
+def (t: Term) whnf(given errCtx: ErrorContext): Whnf = t match {
   case Term.Var(i) => Whnf.Neu(Neutral.Var(i))
   case Term.Val(v) => Whnf.Val(v)
   case Term.Rdx(r) => r match {
@@ -11,7 +13,7 @@ def (t: Term) whnf : Whnf = t match {
       case Whnf.Val(v) => {
         v match {
           case Value.Lam(body) => body.substituteOutmost(arg.raise(1, 0)).whnf
-          case _ => throw WhnfStuckException(s"Expected $v to be a function.")
+          case _ => throw WhnfStuckException(s"Expected $v to be a function.", errCtx)
         }
       }
     }
@@ -19,14 +21,14 @@ def (t: Term) whnf : Whnf = t match {
       case Whnf.Neu(n) => Whnf.Neu(Neutral.Rdx(Redux.Prj1(n)))
       case Whnf.Val(v) => v match {
         case Value.Pair(a, b) => a.whnf
-        case _ => throw WhnfStuckException(s"Expected $v to be a pair.")
+        case _ => throw WhnfStuckException(s"Expected $v to be a pair.", errCtx)
       }
     }
     case Redux.Prj2(p) => p.whnf match {
       case Whnf.Neu(n) => Whnf.Neu(Neutral.Rdx(Redux.Prj2(n)))
       case Whnf.Val(v) => v match {
         case Value.Pair(a, b) => b.whnf
-        case _ => throw WhnfStuckException("Expected " + v + " to be a pair.")
+        case _ => throw WhnfStuckException("Expected " + v + " to be a pair.", errCtx)
       }
     }
   }
