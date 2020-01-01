@@ -29,7 +29,7 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
   (t, ty) match {
     case (Val(Lam(body)), Val(Pi(argTy, bodyTy))) => {
       (ctx :: argTy.whnf) {
-        body.whnf.checkType(bodyTy.whnf) 
+        body.whnf.checkType(bodyTy.whnf)
       }
     }
     case (Val(Pair(a, b)), Val(Sig(aTy, bTy))) => {
@@ -121,8 +121,8 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
   def raiseError() = Left(TypeCheckError(s"$a and $b are not convertible", errCtx))
   if (a == b) return Right(())
   (ty, a, b) match {
-    case (Val(Set(_)), Val(Set(lA)), Val(Set(lB))) => 
-      if (lA == lB) Right(()) 
+    case (Val(Set(_)), Val(Set(lA)), Val(Set(lB))) =>
+      if (lA == lB) Right(())
       else raiseError()
     case (Val(Set(_)), Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => {
       val argTyAWhnf = argTyA.whnf
@@ -159,7 +159,7 @@ private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx:
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.NeutralConvertible(a, b))
   def raiseError() = Left(TypeCheckError(s"neutral $a and $b are not convertible", errCtx))
   (a, b) match {
-    case (Ref(aR), Ref(bR)) => 
+    case (Ref(aR), Ref(bR)) =>
       if (aR == bR) {
         Neu(a).inferType()
       } else {

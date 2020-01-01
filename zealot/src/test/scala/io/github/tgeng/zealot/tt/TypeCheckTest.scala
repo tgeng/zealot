@@ -48,7 +48,7 @@ class TypeCheckTest {
   @Test
   def `more type check` = {
     given ctx: Context = context(set(0), set(0), set(0))
-    
+
     0.nref :> set(0)
     !2 :> set(0)
     1.nref :> set(0)
@@ -63,7 +63,7 @@ class TypeCheckTest {
 
     // 3 : 0
     ctx.append(0.nref)
-    
+
     3.nref :> 0.nref
     !0 :> 0.nref
     (3.nref, 3.nref) :< (0.nref x 0.nref)
@@ -101,15 +101,15 @@ class TypeCheckTest {
     // (simple) compose function
     //            A   B   C   f   g   x  . f   (g   x)
     val compose = lam(lam(lam(lam(lam(lam((!2)((!1)(!0))))))))
-    val composeTy = 
+    val composeTy =
     //A
-      set(0) ->: 
+      set(0) ->:
     //B
-      set(0) ->: 
+      set(0) ->:
     //C: B -> Set
-      (!0 ->: set(0)) ->: 
+      (!0 ->: set(0)) ->:
     //f:(x:B -> C x)
-      (!1 ->: (!1)(!0)) ->: 
+      (!1 ->: (!1)(!0)) ->:
     //g:A -> B
       (!3 ->: !3) ->:
     //x:A

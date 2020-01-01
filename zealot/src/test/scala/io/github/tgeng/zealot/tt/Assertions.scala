@@ -29,7 +29,7 @@ def haveInferredType(ty: Term)(given ctx: Context) = Assertion[Term] { (t, objec
   (t.inferType(), objective) match {
     case (Left(e), true) => Some(s"to have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Left(e), false) => Some(s"to not have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
-    case (Right(inferredType), _) => 
+    case (Right(inferredType), _) =>
     if (objective && inferredType.term != ty) {
       Some(s"to have inferred type\n  $ty\nbut it has inferred type\n  $inferredType")
     } else if (!objective && inferredType.term == ty) {
@@ -48,7 +48,7 @@ def (e: TypeCheckError) messageWithStackTrace(indent: Int) = {
   val indentString = " " * indent
   List(indentString + e.getMessage)
     .concat(
-      e.errorContext.reverse.map{ op => 
+      e.errorContext.reverse.map{ op =>
         op match {
           case Check(t, ty) => s"checking $t against type $ty"
           case Infer(t) => s"inferring type of $t"

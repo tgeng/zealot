@@ -5,7 +5,7 @@ import org.junit.Assert._
 def [T] (subject: T) should(assertion: Assertion[T]) = assertion(subject, true)
 def [T] (subject: T) shouldNot(assertion: Assertion[T]) = assertion(subject, false)
 
-def equal[T](target: T) = Assertion[T] {(t, objective) => 
+def equal[T](target: T) = Assertion[T] {(t, objective) =>
   if (objective && t != target) {
     Some(s"to equal ${target.description}")
   } else if (!objective && t == target) {
@@ -20,7 +20,7 @@ class Assertion[T](failureMessage: (T, Boolean) => Option[String]) {
   def apply(subject: T, objective: Boolean) = {
     failureMessage(subject, objective) match {
       case None => ()
-      case Some(msg) => 
+      case Some(msg) =>
       fail(s"""
       |Expect
       |  ${subject.description}

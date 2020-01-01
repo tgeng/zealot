@@ -48,22 +48,22 @@ private def map[F, T](mapper: F => T)(input: Redux[F]) : Redux[T] = input match 
   case Redux.Prj2(pair) => Redux.Prj2(mapper(pair))
 }
 
-def (t: Term) raise(amount: Int, bar: Int) = 
+def (t: Term) raise(amount: Int, bar: Int) =
   t.raised(given RaiseSpec(amount, bar))
 
-// def (t: Whnf) raise(amount: Int, bar: Int) = 
+// def (t: Whnf) raise(amount: Int, bar: Int) =
 //   t.raised(given RaiseSpec(amount, bar))
 
-def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute.raise(1, 0)).raise(-1, 0) 
+def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute.raise(1, 0)).raise(-1, 0)
 
 
-def (t: Term) substitute(targetIndex: Int, substitute: Term) = 
+def (t: Term) substitute(targetIndex: Int, substitute: Term) =
   t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
 
 private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
   case Term.Ref(Reference.Idx(i)) if (i >= spec.bar) => {
     assert (i + spec.amount >= 0)
-    Term.Ref(Reference.Idx(i + spec.amount)) 
+    Term.Ref(Reference.Idx(i + spec.amount))
   }
   case Term.Ref(_) => t
   case Term.Val(v) => Term.Val(v.raised)
