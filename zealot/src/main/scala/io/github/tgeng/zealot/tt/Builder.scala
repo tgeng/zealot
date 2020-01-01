@@ -4,6 +4,8 @@ object Builder {
   def t(t: Term) = t
 
   def (index: Int) unary_! : Term = Term.Ref(Reference.Idx(index))
+
+  def (index: Int) nref : Term = Term.Ref(Reference.Num(index))
   
   def set(id: Int) = Term.Val(Value.Set(id))
   

@@ -10,10 +10,11 @@ import io.github.tgeng.zealot.tt.Value._
 
 type Type = Whnf
 
-class Context(content: ArrayBuffer[Type] = ArrayBuffer()) {
+class Context() {
+  val content: ArrayBuffer[Type] = ArrayBuffer()
   def apply(r: Reference) : Option[Type] = r match {
     case Idx(i) => if (i < 0 || i >= content.size) Option.empty else Option(content(content.size - i - 1))
-    case Num(n) => Option(content(n)) // number should never be out of bound since it's only used internally
+    case Num(n) => if (n < 0 || n >= content.size) Option.empty else Option(content(n))
   }
   def append(ty: Type) = content.append(ty)
   def dropLast() = content.dropRightInPlace(1)
@@ -62,3 +63,5 @@ private def (r: Reference)replaceIdxWithNum(offset: Int)(given ctx: Context) : R
   case Idx(i) if (i >= offset) => Num(ctx.idxToNum(i, offset))
   case _ => r
 }
+
+type ErrorContext = Seq[TypeCheckOps]

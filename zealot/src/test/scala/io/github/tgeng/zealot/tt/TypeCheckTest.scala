@@ -14,6 +14,7 @@ class TypeCheckTest {
   def `basic type check` = {
     (*) :< unit
     (*, *) :< (unit x unit)
+    (unit, *) :< (set(0) x !0)
     lam(*) :< (unit ->: unit)
     set(1) :< set(2)
     set(0) :< set(2)
@@ -45,6 +46,52 @@ class TypeCheckTest {
   }
 
   @Test
+  def `more type check` = {
+    given ctx: Context = context(set(0), set(0), set(0))
+    
+    0.nref :> set(0)
+    !2 :> set(0)
+    1.nref :> set(0)
+    !1 :> set(0)
+    2.nref :> set(0)
+    !0 :> set(0)
+
+    (0.nref ->: 1.nref) :> set(0)
+    (!2 ->: !2) :> set(0)
+    (0.nref x 1.nref) :> set(0)
+    (!2 x !2) :> set(0)
+
+    // 3 : 0
+    ctx.append(0.nref)
+    
+    3.nref :> 0.nref
+    !0 :> 0.nref
+    (3.nref, 3.nref) :< (0.nref x 0.nref)
+    (!0, !0) :< (0.nref x 0.nref)
+    lam(3.nref) :< (0.nref ->: 0.nref)
+    lam(!1) :< (0.nref ->: 0.nref)
+    lam(3.nref) :< (1.nref ->: 0.nref)
+    lam(!1) :< (1.nref ->: 0.nref)
+
+    // 4 : 0 -> 1
+    ctx.append(0.nref ->: 1.nref)
+
+    4.nref(3.nref) :> 1.nref
+    (!0)(!1) :> 1.nref
+
+    // 5 : 0 x 1
+    ctx.append(0.nref x 1.nref)
+
+    p1(5.nref) :> 0.nref
+    p1(!0) :> 0.nref
+    p2(5.nref) :> 1.nref
+    p2(!0) :> 1.nref
+
+    lam(p1(!0)) :< ((0.nref x !0) ->: 0.nref)
+    lam(p2(!0)) :< ((0.nref x !0) ->: p1(!0))
+  }
+
+  @Test
   def `more lambda type check` = {
     lam(!0) :< (set(0) ->: set(0))
 
@@ -52,7 +99,6 @@ class TypeCheckTest {
     lam(lam(!0)) :< (set(0) ->: !0 ->: !1)
 
     // (simple) compose function
-
     //            A   B   C   f   g   x  . f   (g   x)
     val compose = lam(lam(lam(lam(lam(lam((!2)((!1)(!0))))))))
     val composeTy = 

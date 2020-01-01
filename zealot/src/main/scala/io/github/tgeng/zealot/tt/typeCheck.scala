@@ -199,8 +199,6 @@ enum TypeCheckOps {
   case NeutralConvertible(a: Neutral, b: Neutral)
 }
 
-type ErrorContext = Seq[TypeCheckOps]
-
 private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage, e.errorContext)
 
 private def (t: Whnf) checkPiType()(given errCtx: ErrorContext): Either[TypeCheckError, (Term, Term)] = t match {

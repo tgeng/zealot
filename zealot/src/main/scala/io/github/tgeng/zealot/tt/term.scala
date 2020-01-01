@@ -18,7 +18,6 @@ enum Neutral {
 
 enum Reference {
   case Idx(idx: Int)
-  // Only used internally for type checking.
   case Num(num: Int)
 }
 
