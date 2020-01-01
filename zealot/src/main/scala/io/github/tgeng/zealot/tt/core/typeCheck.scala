@@ -199,7 +199,11 @@ enum TypeCheckOps {
   case NeutralConvertible(a: Neutral, b: Neutral)
 }
 
-private def (e: WhnfStuckException) toTypeCheckError() = TypeCheckError(e.getMessage, e.errorContext)
+private def (e: WhnfStuckException) toTypeCheckError() = {
+  var msg = e.getMessage()
+  if (msg == null) msg = ""
+  TypeCheckError(msg, e.errorContext)
+}
 
 private def (t: Whnf) checkPiType()(given errCtx: ErrorContext): Either[TypeCheckError, (Term, Term)] = t match {
   case Val(Pi(argTy, bodyTy)) => Right(argTy, bodyTy)
