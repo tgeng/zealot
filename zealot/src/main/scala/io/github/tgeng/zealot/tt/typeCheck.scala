@@ -28,7 +28,7 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Check(t, ty))
   (t, ty) match {
     case (Val(Lam(body)), Val(Pi(argTy, bodyTy))) => {
-      (ctx :: argTy.whnf) { () => 
+      (ctx :: argTy.whnf) {
         body.whnf.checkType(bodyTy.whnf) 
       }
     }
@@ -102,13 +102,13 @@ private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: Contex
     case (Val(Set(iA)), Val(Set(iB))) => if (iA <= iB) Right(()) else raiseError()
     case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
       _ <- (argTyA.whnf ~= argTyB.whnf)(Val(Set(-1)))
-      _ <- (ctx :: argTyA.whnf) { () =>
+      _ <- (ctx :: argTyA.whnf) {
         bodyTyA.whnf <= bodyTyB.whnf
       }
     } yield ()
     case (Val(Sig(aTyA, bTyA)), Val(Sig(aTyB, bTyB))) => for {
       _ <- (aTyA.whnf ~= aTyB.whnf)(Val(Set(-1)))
-      _ <- (ctx :: aTyA.whnf) { () =>
+      _ <- (ctx :: aTyA.whnf) {
         bTyA.whnf <= bTyB.whnf
       }
     } yield ()
@@ -128,7 +128,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
       val argTyAWhnf = argTyA.whnf
       for {
         _ <- (argTyAWhnf ~= argTyB.whnf)(ty)
-        _ <- (ctx :: argTyAWhnf) { () =>
+        _ <- (ctx :: argTyAWhnf) {
           (bodyTyA.whnf ~= bodyTyB.whnf)(ty)
         }
       } yield ()
@@ -137,13 +137,13 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
       val aTyAWhnf = aTyA.whnf
       for {
         _ <- (aTyAWhnf ~= aTyB.whnf)(ty)
-        _ <- (ctx :: aTyAWhnf) { () =>
+        _ <- (ctx :: aTyAWhnf) {
           (bTyA.whnf ~= bTyB.whnf)(ty)
         }
       } yield ()
     }
     case (Val(Unit), _, _) => Right(())
-    case (Val(Pi(argTy, bodyTy)), _, _) => (ctx :: argTy.whnf) { () =>
+    case (Val(Pi(argTy, bodyTy)), _, _) => (ctx :: argTy.whnf) {
       ((a.term)(!0).whnf ~= (b.term)(!0).whnf)(bodyTy.whnf)
     }
     case (Val(Sig(aTy, bTy)), _, _) => for {

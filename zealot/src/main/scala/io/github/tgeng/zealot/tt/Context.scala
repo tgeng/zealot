@@ -22,9 +22,9 @@ class Context() {
   def idxToNum(idx: Int, offset: Int) : Int = content.size + offset - 1 - idx
 }
 
-def [T](ctx: Context)::(ty: Type)(action: () => T) : T = {
+def [T](ctx: Context)::(ty: Type)(action: => T) : T = {
   ctx.append(ty.replaceIdxWithNum(0)(given ctx))
-  val result = action()
+  val result = action
   ctx.dropLast()
   result
 }
