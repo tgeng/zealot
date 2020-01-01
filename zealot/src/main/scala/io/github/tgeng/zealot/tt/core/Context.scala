@@ -20,6 +20,7 @@ class Context() {
   def dropLast() = content.dropRightInPlace(1)
   def isIdxEqualNum(idx: Int, num: Int) = idx + num + 1 == content.size
   def idxToNum(idx: Int, offset: Int) : Int = content.size + offset - 1 - idx
+  def snapshot : Seq[Type] = content.toList
 }
 
 def [T](ctx: Context)::(ty: Type)(action: => T) : T = {

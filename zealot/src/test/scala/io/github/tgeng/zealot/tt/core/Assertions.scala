@@ -47,8 +47,12 @@ def (t1: Term) :> (t2: Term)(given ctx: Context) = t1 should haveInferredType(t2
 def (e: TypeCheckError) messageWithStackTrace(indent: Int) = {
   val indentString = " " * indent
   List(indentString + e.getMessage)
+    .appended(indentString + "context:")
+    .concat(e.ctx.zipWithIndex.map{ (t, i) =>
+      s"$indentString  $i: $t"
+    })
     .concat(
-      e.errorContext.reverse.map{ op =>
+      e.errorContext.reverseIterator.map { op =>
         op match {
           case Check(t, ty) => s"checking $t against type $ty"
           case Infer(t) => s"inferring type of $t"

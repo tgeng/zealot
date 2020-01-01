@@ -30,6 +30,7 @@ class TypeCheckTest {
     set(1) shouldNot checkWithType(set(1))
     (*) shouldNot checkWithType(*)
     (set(1) ->: set(2)) shouldNot checkWithType(set(2))
+    lam(*) shouldNot checkWithType(* ->: unit)
   }
 
   @Test
@@ -47,6 +48,9 @@ class TypeCheckTest {
 
   @Test
   def `more type check` = {
+    lam(p1(!0)) :< ((set(0) x !0) ->: set(0))
+    lam(p2(!0)) :< ((set(0) x !0) ->: p1(!0))
+
     given ctx: Context = context(set(0), set(0), set(0))
 
     0.nref :> set(0)
@@ -86,9 +90,6 @@ class TypeCheckTest {
     p1(!0) :> 0.nref
     p2(5.nref) :> 1.nref
     p2(!0) :> 1.nref
-
-    lam(p1(!0)) :< ((0.nref x !0) ->: 0.nref)
-    lam(p2(!0)) :< ((0.nref x !0) ->: p1(!0))
   }
 
   @Test

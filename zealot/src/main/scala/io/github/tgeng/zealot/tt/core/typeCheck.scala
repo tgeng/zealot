@@ -28,9 +28,14 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Check(t, ty))
   (t, ty) match {
     case (Val(Lam(body)), Val(Pi(argTy, bodyTy))) => {
-      (ctx :: argTy.whnf) {
-        body.whnf.checkType(bodyTy.whnf)
-      }
+      val argTyWhnf = argTy.whnf
+      for {
+        argTyTy <- argTyWhnf.inferType()
+        _ <- argTyTy.checkSetType()
+        result <- (ctx :: argTy.whnf) {
+          body.whnf.checkType(bodyTy.whnf)
+        }
+      } yield result
     }
     case (Val(Pair(a, b)), Val(Sig(aTy, bTy))) => {
       val aTyWhnf = aTy.whnf
@@ -40,6 +45,8 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
       } yield result
     }
     case _ => for {
+      tyty <- ty.inferType()
+      _ <- tyty.checkSetType()
       inferredType <- t.inferType()
       _ <- inferredType <= ty
     } yield ()
@@ -52,7 +59,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
     case Neu(v) => v match {
       case Ref(r) => ctx(r) match {
         case Some(ty) => Right(ty)
-        case empty => Left(TypeCheckError(s"Unexpected variable at reference $r", errCtx))
+        case empty => Left(TypeCheckError(s"Unexpected variable at reference $r.", errCtx, ctx.snapshot))
       }
       case Rdx(r) => r match {
         case App(fn, arg) => for {
@@ -75,20 +82,34 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
     }
     case Val(v) => v match {
         case Set(i) => Right(Val(Set(i+1)))
-        case Pi(argTy, bodyTy) => for {
-          argTyTy <- argTy.whnf.inferType()
-          argLevel <- argTyTy.checkSetType()
-          bodyTyTy <- bodyTy.whnf.inferType()
-          bodyLevel <- bodyTyTy.checkSetType()
-        } yield Val(Set(max(argLevel, bodyLevel)))
-        case Lam(_) => Left(TypeCheckError("cannot infer type of lam", errCtx))
-        case Sig(aTy, bTy) => for {
-          aTyTy <- aTy.whnf.inferType()
-          aLevel <- aTyTy.checkSetType()
-          bTyTy <- bTy.whnf.inferType()
-          bLevel <- bTyTy.checkSetType()
-        } yield Val(Set(max(aLevel, bLevel)))
-        case Pair(_, _) => Left(TypeCheckError("cannot infer type of pair", errCtx))
+        case Pi(argTy, bodyTy) => {
+          val argTyWhnf = argTy.whnf
+          for {
+            argTyTy <- argTyWhnf.inferType()
+            argLevel <- argTyTy.checkSetType()
+            bodyLevel <- (ctx :: argTyWhnf) {
+              for {
+                bodyTyTy <- bodyTy.whnf.inferType()
+                bodyLevel <- bodyTyTy.checkSetType()
+              } yield bodyLevel
+            }
+          } yield Val(Set(max(argLevel, bodyLevel)))
+        }
+        case Lam(_) => Left(TypeCheckError("Cannot infer type of a lambda.", errCtx, ctx.snapshot))
+        case Sig(aTy, bTy) => {
+          val aTyWhnf = aTy.whnf
+          for {
+            aTyTy <- aTyWhnf.inferType()
+            aLevel <- aTyTy.checkSetType()
+            bLevel <- (ctx :: aTyWhnf) {
+              for {
+                bTyTy <- bTy.whnf.inferType()
+                bLevel <- bTyTy.checkSetType()
+              } yield bLevel
+            }
+          } yield Val(Set(max(aLevel, bLevel)))
+        }
+        case Pair(_, _) => Left(TypeCheckError("Cannot infer type of a pair.", errCtx, ctx.snapshot))
         case Unit => Right(Val(Set(0)))
         case Star => Right(Val(Unit))
     }
@@ -97,7 +118,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
 
 private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: Context) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Subtype(a, b))
-  def raiseError() = Left(TypeCheckError(s"$a is not a subtype of $b", errCtx))
+  def raiseError() = Left(TypeCheckError(s"$a is not a subtype of $b.", errCtx, ctx.snapshot))
   (a, b) match {
     case (Val(Set(iA)), Val(Set(iB))) => if (iA <= iB) Right(()) else raiseError()
     case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
@@ -116,9 +137,10 @@ private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: Contex
   }
 }
 
+// TODO(tgeng): consider doing this coinductively
 private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given ctx: Context) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.TermConvertible(a, b, ty))
-  def raiseError() = Left(TypeCheckError(s"$a and $b are not convertible", errCtx))
+  def raiseError() = Left(TypeCheckError(s"Term $a and $b are not convertible.", errCtx, ctx.snapshot))
   if (a == b) return Right(())
   (ty, a, b) match {
     case (Val(Set(_)), Val(Set(lA)), Val(Set(lB))) =>
@@ -155,9 +177,10 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
   }
 }
 
+// TODO(tgeng): consider doing this coinductively
 private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx: Context) : Either[TypeCheckError, Type] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.NeutralConvertible(a, b))
-  def raiseError() = Left(TypeCheckError(s"neutral $a and $b are not convertible", errCtx))
+  def raiseError() = Left(TypeCheckError(s"Neutral $a and $b are not convertible.", errCtx, ctx.snapshot))
   (a, b) match {
     case (Ref(aR), Ref(bR)) =>
       if (aR == bR) {
@@ -189,7 +212,7 @@ private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx:
   }
 }
 
-class TypeCheckError(val message: String, val errorContext: ErrorContext) extends Exception(message)
+class TypeCheckError(val message: String, val errorContext: ErrorContext, val ctx: Seq[Type]) extends Exception(message)
 
 enum TypeCheckOps {
   case Check(t: Whnf, ty: Whnf)
@@ -202,20 +225,20 @@ enum TypeCheckOps {
 private def (e: WhnfStuckException) toTypeCheckError() = {
   var msg = e.getMessage()
   if (msg == null) msg = ""
-  TypeCheckError(msg, e.errorContext)
+  TypeCheckError(msg, e.errorContext, Seq.empty)
 }
 
-private def (t: Whnf) checkPiType()(given errCtx: ErrorContext): Either[TypeCheckError, (Term, Term)] = t match {
+private def (t: Whnf) checkPiType()(given errCtx: ErrorContext)(given ctx: Context): Either[TypeCheckError, (Term, Term)] = t match {
   case Val(Pi(argTy, bodyTy)) => Right(argTy, bodyTy)
-  case _ => Left(TypeCheckError(s"Expected $t to be a dependent product type", errCtx))
+  case _ => Left(TypeCheckError(s"Expected $t to be a dependent product type", errCtx, ctx.snapshot))
 }
 
-private def (t: Whnf) checkSigType()(given errCtx: ErrorContext): Either[TypeCheckError, (Term, Term)] = t match {
+private def (t: Whnf) checkSigType()(given errCtx: ErrorContext)(given ctx: Context): Either[TypeCheckError, (Term, Term)] = t match {
   case Val(Sig(aTy, bTy)) => Right(aTy, bTy)
-  case _ => Left(TypeCheckError(s"Expected $t to be a dependent pair type.", errCtx))
+  case _ => Left(TypeCheckError(s"Expected $t to be a dependent pair type.", errCtx, ctx.snapshot))
 }
 
-private def (t: Whnf) checkSetType()(given errCtx: ErrorContext): Either[TypeCheckError, Int] = t match {
+private def (t: Whnf) checkSetType()(given errCtx: ErrorContext)(given ctx: Context): Either[TypeCheckError, Int] = t match {
   case Val(Set(l)) => Right(l)
-  case _ => Left(TypeCheckError(s"Expected $t to be a Set at some level.", errCtx))
+  case _ => Left(TypeCheckError(s"Expected $t to be a Set at some level.", errCtx, ctx.snapshot))
 }
