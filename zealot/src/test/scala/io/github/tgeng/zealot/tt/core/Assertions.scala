@@ -1,8 +1,8 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 import scala.collection.immutable.Seq
-import io.github.tgeng.zealot.tt.TypeCheckOps._
-import io.github.tgeng.zealot.tt.ErrorContext
+import io.github.tgeng.zealot.tt.core.TypeCheckOps._
+import io.github.tgeng.zealot.tt.core.ErrorContext
 import io.github.tgeng.fluentassert._
 
 def haveWhnf(target: Term) = Assertion[Term]{ (t, objective) =>

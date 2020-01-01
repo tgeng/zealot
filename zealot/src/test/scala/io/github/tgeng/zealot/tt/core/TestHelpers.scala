@@ -1,4 +1,4 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 def context(types: Term*) : Context = {
   val result = Context()

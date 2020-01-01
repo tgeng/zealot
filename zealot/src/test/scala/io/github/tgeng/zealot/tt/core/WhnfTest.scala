@@ -1,10 +1,10 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 import scala.language.implicitConversions
 import org.junit.Test
 import io.github.tgeng.fluentassert._
-import io.github.tgeng.zealot.tt._
-import io.github.tgeng.zealot.tt.Builder.{given, _}
+import io.github.tgeng.zealot.tt.core._
+import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 
 class WhnfTest {
   @Test

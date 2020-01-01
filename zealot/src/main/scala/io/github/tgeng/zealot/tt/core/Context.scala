@@ -1,12 +1,12 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 import scala.collection.mutable.ArrayBuffer
-import io.github.tgeng.zealot.tt.Neutral._
-import io.github.tgeng.zealot.tt.Reference._
-import io.github.tgeng.zealot.tt.Redux._
-import io.github.tgeng.zealot.tt.Term._
-import io.github.tgeng.zealot.tt.Whnf._
-import io.github.tgeng.zealot.tt.Value._
+import io.github.tgeng.zealot.tt.core.Neutral._
+import io.github.tgeng.zealot.tt.core.Reference._
+import io.github.tgeng.zealot.tt.core.Redux._
+import io.github.tgeng.zealot.tt.core.Term._
+import io.github.tgeng.zealot.tt.core.Whnf._
+import io.github.tgeng.zealot.tt.core.Value._
 
 type Type = Whnf
 

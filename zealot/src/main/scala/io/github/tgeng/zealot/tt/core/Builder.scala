@@ -1,4 +1,4 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 object Builder {
   def t(t: Term) = t

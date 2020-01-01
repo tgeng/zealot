@@ -1,14 +1,14 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 import scala.math.max
 import scala.language.implicitConversions
 import scala.collection.immutable.Seq
-import io.github.tgeng.zealot.tt.Builder.{given, _}
-import io.github.tgeng.zealot.tt.Neutral._
-import io.github.tgeng.zealot.tt.Redux._
-import io.github.tgeng.zealot.tt.Reference._
-import io.github.tgeng.zealot.tt.Value._
-import io.github.tgeng.zealot.tt.Whnf._
+import io.github.tgeng.zealot.tt.core.Builder.{given, _}
+import io.github.tgeng.zealot.tt.core.Neutral._
+import io.github.tgeng.zealot.tt.core.Redux._
+import io.github.tgeng.zealot.tt.core.Reference._
+import io.github.tgeng.zealot.tt.core.Value._
+import io.github.tgeng.zealot.tt.core.Whnf._
 
 def (t: Term) checkType(ty: Term)(given ctx: Context) : Either[TypeCheckError, Unit] = try {
   given errCtx : ErrorContext = Seq.empty

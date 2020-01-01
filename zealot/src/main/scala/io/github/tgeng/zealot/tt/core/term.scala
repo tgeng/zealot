@@ -1,4 +1,4 @@
-package io.github.tgeng.zealot.tt
+package io.github.tgeng.zealot.tt.core
 
 enum Term {
   case Ref(ref: Reference) extends Term
