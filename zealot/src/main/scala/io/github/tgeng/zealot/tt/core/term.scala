@@ -1,19 +1,19 @@
 package io.github.tgeng.zealot.tt.core
 
 enum Term {
-  case Ref(ref: Reference) extends Term
-  case Val(value: Value) extends Term
-  case Rdx(rdx: Redux[Term]) extends Term
+  case Ref(ref: Reference)
+  case Val(value: Value)
+  case Rdx(rdx: Redux[Term])
 }
 
 enum Whnf {
-  case Neu(neu: Neutral) extends Whnf
-  case Val(value: Value) extends Whnf
+  case Neu(neu: Neutral)
+  case Val(value: Value)
 }
 
 enum Neutral {
-  case Ref(ref: Reference) extends Neutral
-  case Rdx(rdx: Redux[Neutral]) extends Neutral
+  case Ref(ref: Reference)
+  case Rdx(rdx: Redux[Neutral])
 }
 
 enum Reference {
@@ -25,19 +25,19 @@ enum Reference {
 }
 
 enum Value {
-  case Set(level: Int) extends Value
-  case Pi(dom: Term, cod: Term) extends Value
-  case Lam(body: Term) extends Value
-  case Sig(fstTy: Term, sndTy: Term) extends Value
-  case Pair(fst: Term, snd: Term) extends Value
-  case Unit extends Value
-  case Star extends Value
+  case Set(level: Int)
+  case Pi(dom: Term, cod: Term)
+  case Lam(body: Term)
+  case Sig(fstTy: Term, sndTy: Term)
+  case Pair(fst: Term, snd: Term)
+  case Unit
+  case Star
 }
 
 enum Redux[T] {
-  case App(fn: T, arg: Term) extends Redux[T]
-  case Prj1(pair: T) extends Redux[T]
-  case Prj2(pair: T) extends Redux[T]
+  case App(fn: T, arg: Term)
+  case Prj1(pair: T)
+  case Prj2(pair: T)
 }
 
 private def neutralToTerm(n: Neutral) : Term = n match {
