@@ -32,7 +32,7 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
       for {
         argTyTy <- argTyWhnf.inferType()
         _ <- argTyTy.checkSetType()
-        result <- (ctx :: argTy.whnf) {
+        result <- (argTy.whnf :: ctx) {
           body.whnf.checkType(bodyTy.whnf)
         }
       } yield result
@@ -87,7 +87,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
           for {
             argTyTy <- argTyWhnf.inferType()
             argLevel <- argTyTy.checkSetType()
-            bodyLevel <- (ctx :: argTyWhnf) {
+            bodyLevel <- (argTyWhnf :: ctx) {
               for {
                 bodyTyTy <- bodyTy.whnf.inferType()
                 bodyLevel <- bodyTyTy.checkSetType()
@@ -101,7 +101,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: Context
           for {
             aTyTy <- aTyWhnf.inferType()
             aLevel <- aTyTy.checkSetType()
-            bLevel <- (ctx :: aTyWhnf) {
+            bLevel <- (aTyWhnf :: ctx) {
               for {
                 bTyTy <- bTy.whnf.inferType()
                 bLevel <- bTyTy.checkSetType()
@@ -123,13 +123,13 @@ private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: Contex
     case (Val(Set(iA)), Val(Set(iB))) => if (iA <= iB) Right(()) else raiseError()
     case (Val(Pi(argTyA, bodyTyA)), Val(Pi(argTyB, bodyTyB))) => for {
       _ <- (argTyA.whnf ~= argTyB.whnf)(Val(Set(-1)))
-      _ <- (ctx :: argTyA.whnf) {
+      _ <- (argTyA.whnf :: ctx) {
         bodyTyA.whnf <= bodyTyB.whnf
       }
     } yield ()
     case (Val(Sig(aTyA, bTyA)), Val(Sig(aTyB, bTyB))) => for {
       _ <- (aTyA.whnf ~= aTyB.whnf)(Val(Set(-1)))
-      _ <- (ctx :: aTyA.whnf) {
+      _ <- (aTyA.whnf :: ctx) {
         bTyA.whnf <= bTyB.whnf
       }
     } yield ()
@@ -150,7 +150,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
       val argTyAWhnf = argTyA.whnf
       for {
         _ <- (argTyAWhnf ~= argTyB.whnf)(ty)
-        _ <- (ctx :: argTyAWhnf) {
+        _ <- (argTyAWhnf :: ctx) {
           (bodyTyA.whnf ~= bodyTyB.whnf)(ty)
         }
       } yield ()
@@ -159,13 +159,13 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
       val aTyAWhnf = aTyA.whnf
       for {
         _ <- (aTyAWhnf ~= aTyB.whnf)(ty)
-        _ <- (ctx :: aTyAWhnf) {
+        _ <- (aTyAWhnf :: ctx) {
           (bTyA.whnf ~= bTyB.whnf)(ty)
         }
       } yield ()
     }
     case (Val(Unit), _, _) => Right(())
-    case (Val(Pi(argTy, bodyTy)), _, _) => (ctx :: argTy.whnf) {
+    case (Val(Pi(argTy, bodyTy)), _, _) => (argTy.whnf :: ctx) {
       ((a.term)(!0).whnf ~= (b.term)(!0).whnf)(bodyTy.whnf)
     }
     case (Val(Sig(aTy, bTy)), _, _) => for {
@@ -177,7 +177,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
   }
 }
 
-// TODO(tgeng): consider doing this coinductively
+// TODO(tgeng): consider doing this co-inductively
 private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx: Context) : Either[TypeCheckError, Type] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.NeutralConvertible(a, b))
   def raiseError() = Left(TypeCheckError(s"Neutral $a and $b are not convertible.", errCtx, ctx.snapshot))

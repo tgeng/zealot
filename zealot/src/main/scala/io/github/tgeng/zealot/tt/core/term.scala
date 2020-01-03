@@ -17,9 +17,9 @@ enum Neutral {
 }
 
 enum Reference {
-  // De Brujin index
+  // De Bruijn index
   case Idx(idx: Int)
-  // De Brujin number (aka context size - 1 - index). Used by type checking
+  // De Bruijn number (aka context size - 1 - index). Used by type checking
   // logic. Client code should not use this.
   case Num(num: Int)
 }

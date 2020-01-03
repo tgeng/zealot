@@ -16,18 +16,17 @@ class Context() {
     case Idx(i) => if (i < 0 || i >= content.size) Option.empty else Option(content(content.size - i - 1))
     case Num(n) => if (n < 0 || n >= content.size) Option.empty else Option(content(n))
   }
-  def append(ty: Type) = content.append(ty)
-  def dropLast() = content.dropRightInPlace(1)
+  def append(ty: Type) = content.append(ty.replaceIdxWithNum(0)(given this))
   def isIdxEqualNum(idx: Int, num: Int) = idx + num + 1 == content.size
   def idxToNum(idx: Int, offset: Int) : Int = content.size + offset - 1 - idx
   def snapshot : Seq[Type] = content.toList
-}
 
-def [T](ctx: Context)::(ty: Type)(action: => T) : T = {
-  ctx.append(ty.replaceIdxWithNum(0)(given ctx))
-  val result = action
-  ctx.dropLast()
-  result
+  def ::[T](ty: Type)(action: => T) : T = {
+    append(ty)
+    val result = action
+    content.dropRightInPlace(1)
+    result
+  }
 }
 
 private def (w: Whnf)replaceIdxWithNum(offset: Int)(given ctx: Context) : Whnf = w match {

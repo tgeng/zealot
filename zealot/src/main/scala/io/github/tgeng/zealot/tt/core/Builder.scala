@@ -1,10 +1,13 @@
 package io.github.tgeng.zealot.tt.core
 
+import scala.language.implicitConversions
+
 object Builder {
   def t(t: Term) = t
 
   def (index: Int) unary_! : Term = Term.Ref(Reference.Idx(index))
 
+  // Careful! You should not use this unless you are writing tests.
   def (index: Int) nref : Term = Term.Ref(Reference.Num(index))
 
   def set(id: Int) = Term.Val(Value.Set(id))
