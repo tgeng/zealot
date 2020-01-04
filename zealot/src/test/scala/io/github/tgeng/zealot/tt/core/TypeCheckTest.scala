@@ -66,7 +66,7 @@ class TypeCheckTest {
     (!2 x !2) :> set(0)
 
     // 3 : 0
-    ctx.append(0.nref)
+    ctx += 0.nref
 
     3.nref :> 0.nref
     !0 :> 0.nref
@@ -78,13 +78,13 @@ class TypeCheckTest {
     lam(!1) :< (1.nref ->: 0.nref)
 
     // 4 : 0 -> 1
-    ctx.append(0.nref ->: 1.nref)
+    ctx += 0.nref ->: 1.nref
 
     4.nref(3.nref) :> 1.nref
     (!0)(!1) :> 1.nref
 
     // 5 : 0 x 1
-    ctx.append(0.nref x 1.nref)
+    ctx += 0.nref x 1.nref
 
     p1(5.nref) :> 0.nref
     p1(!0) :> 0.nref
