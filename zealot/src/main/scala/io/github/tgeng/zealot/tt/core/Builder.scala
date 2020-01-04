@@ -10,7 +10,7 @@ object Builder {
   // Careful! You should not use this unless you are writing tests.
   def (index: Int) nref : Term = Term.Ref(Reference.Num(index))
 
-  def set(id: Int) = Term.Val(Value.Set(id))
+  def set(level: Int) = Term.Val(Value.Set(level))
 
   def (a: Term) ->: (b: Term) : Term = Term.Val(Value.Pi(a, b))
 
@@ -21,7 +21,6 @@ object Builder {
   def (a: Term) x (b: Term) = Term.Val(Value.Sig(a, b))
 
   given tupleToPairConditional[A, B](given ac: A => Term)(given bc: B => Term) : Conversion[(A, B), Term] = (a, b) => Term.Val(Value.Pair(ac(a), bc(b)))
-
   given tupleToPair : Conversion[(Term, Term), Term] = (a, b) => Term.Val(Value.Pair(a, b))
 
   def p1(a: Term) = Term.Rdx(Redux.Prj1(a))
