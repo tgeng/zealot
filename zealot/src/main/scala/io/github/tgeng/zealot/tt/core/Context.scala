@@ -17,9 +17,9 @@ class Context() {
     case Num(n) => if (n < 0 || n >= content.size) Option.empty else Option(content(n))
   }
 
-  def +=(ty: Type) = content.append(ty.replaceIdxWithNum(0)(given this))
+  def +=(tys: Type*) = for (ty <- tys) content.append(ty.replaceIdxWithNum(0)(given this))
 
-  def ++=(tys: Traversable[Type]) = for (ty <- tys) this += ty
+  def ++=(tys: Traversable[Type]) = this.+=(tys.toSeq : _*)
 
   def ::[T](ty: Type)(action: => T) : T = {
     +=(ty)
