@@ -36,6 +36,10 @@ class FTermTest {
     FVal(FPair(g1, g2)) should haveDeBruijnTerm((!1, !0))
     FVal(FUnit()) should haveDeBruijnTerm(unit)
     FVal(FStar()) should haveDeBruijnTerm(*)
+
+    FRdx(FApp(g1, g2)) should haveDeBruijnTerm((!1)(!0))
+    FRdx(FPrj1(g1)) should haveDeBruijnTerm(p1(!1))
+    FRdx(FPrj2(g1)) should haveDeBruijnTerm(p2(!1))
   }
 
   @Test
