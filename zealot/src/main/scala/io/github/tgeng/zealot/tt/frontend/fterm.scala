@@ -4,7 +4,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import io.github.tgeng.zealot.common._
 import io.github.tgeng.zealot.tt.core.Term
-import io.github.tgeng.zealot.tt.core.Builder.{given, _}
+import io.github.tgeng.zealot.tt.core.Term._
+import io.github.tgeng.zealot.tt.core.Redux._
+import io.github.tgeng.zealot.tt.core.Reference._
+import io.github.tgeng.zealot.tt.core.Value._
 
 
 enum FTerm {
@@ -38,7 +41,7 @@ import FReference._
 import FValue._
 import FRedux._
 
-def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationError, Term] = {
+def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationError, Term[Nothing]] = {
   import io.github.tgeng.zealot.common.EitherSugar.given
   import scala.language.implicitConversions
   ft match {

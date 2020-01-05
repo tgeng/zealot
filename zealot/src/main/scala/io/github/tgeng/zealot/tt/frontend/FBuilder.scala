@@ -7,7 +7,7 @@ import FRedux._
 
 import scala.language.implicitConversions
 
-object FBuilder {
+trait FBuilder {
   def ft(ft: FTerm) = ft
 
   def (name: String) unary_! = FRef(FName(name))
