@@ -12,13 +12,14 @@ object Builder {
 
   def set(level: Int) = Term.Val(Value.Set(level))
 
-  def (a: Term) ->: (b: Term) : Term = Term.Val(Value.Pi(a, b))
+  def (a:(String, Term)) ->: (b: Term) : Term = Term.Val(Value.Pi(a._2, b)(a._1))
 
-  def lam(body: Term) : Term = Term.Val(Value.Lam(body))
+  def lam(body: Term) : Term = lam("", body)
+  def lam(name: String, body: Term) : Term = Term.Val(Value.Lam(body)(name))
 
   def (a: Term) apply (b: Term) = Term.Rdx(Redux.App(a, b))
 
-  def (a: Term) x (b: Term) = Term.Val(Value.Sig(a, b))
+  def (a: (String, Term)) x (b: Term) = Term.Val(Value.Sig(a._2, b)(a._1))
 
   given tupleToPairConditional[A, B](given ac: A => Term)(given bc: B => Term) : Conversion[(A, B), Term] = (a, b) => Term.Val(Value.Pair(ac(a), bc(b)))
   given tupleToPair : Conversion[(Term, Term), Term] = (a, b) => Term.Val(Value.Pair(a, b))
@@ -30,4 +31,6 @@ object Builder {
   def unit = Term.Val(Value.Unit)
 
   def * = Term.Val(Value.Star)
+
+  given unnamedArg : Conversion[Term, (String, Term)] = ft => ("", ft)
 }

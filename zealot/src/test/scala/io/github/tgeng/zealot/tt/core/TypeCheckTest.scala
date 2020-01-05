@@ -8,7 +8,7 @@ import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 
 class TypeCheckTest {
 
-  given ctx : Context = Context()
+  given ctx : TypeContext = TypeContext()
 
   @Test
   def `basic type check` = {
@@ -51,7 +51,7 @@ class TypeCheckTest {
     lam(p1(!0)) :< ((set(0) x !0) ->: set(0))
     lam(p2(!0)) :< ((set(0) x !0) ->: p1(!0))
 
-    given ctx: Context = context(set(0), set(0), set(0))
+    given ctx: TypeContext = context(set(0), set(0), set(0))
 
     0.nref :> set(0)
     !2 :> set(0)

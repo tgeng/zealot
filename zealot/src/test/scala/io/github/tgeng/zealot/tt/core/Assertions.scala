@@ -17,7 +17,7 @@ def haveWhnf(target: Term) = Assertion[Term]{ (t, objective) =>
   }
 }
 
-def checkWithType(ty: Term)(given ctx: Context) = Assertion[Term] { (t, objective) =>
+def checkWithType(ty: Term)(given ctx: TypeContext) = Assertion[Term] { (t, objective) =>
   (t.checkType(ty), objective) match {
     case (Left(e), true) => Some(s"to check with type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Right(_), false) => Some(s"to not check with type\n $ty")
@@ -25,7 +25,7 @@ def checkWithType(ty: Term)(given ctx: Context) = Assertion[Term] { (t, objectiv
   }
 }
 
-def haveInferredType(ty: Term)(given ctx: Context) = Assertion[Term] { (t, objective) =>
+def haveInferredType(ty: Term)(given ctx: TypeContext) = Assertion[Term] { (t, objective) =>
   (t.inferType(), objective) match {
     case (Left(e), true) => Some(s"to have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Left(e), false) => Some(s"to not have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
@@ -41,8 +41,8 @@ def haveInferredType(ty: Term)(given ctx: Context) = Assertion[Term] { (t, objec
 }
 
 def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)
-def (t1: Term) :< (t2: Term)(given ctx: Context) = t1 should checkWithType(t2)
-def (t1: Term) :> (t2: Term)(given ctx: Context) = t1 should haveInferredType(t2)
+def (t1: Term) :< (t2: Term)(given ctx: TypeContext) = t1 should checkWithType(t2)
+def (t1: Term) :> (t2: Term)(given ctx: TypeContext) = t1 should haveInferredType(t2)
 
 def (e: TypeCheckError) messageWithStackTrace(indent: Int) = {
   val indentString = " " * indent

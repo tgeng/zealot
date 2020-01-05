@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import io.github.tgeng.zealot.common._
 import io.github.tgeng.zealot.tt.core.Term
-import io.github.tgeng.zealot.tt.core.Builder.{given, _}
+import io.github.tgeng.zealot.tt.core.Builder
 
 
 enum FTerm {
@@ -39,6 +39,7 @@ import FValue._
 import FRedux._
 
 def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationError, Term] = {
+  import Builder.{given, _}
   import io.github.tgeng.zealot.common.EitherSugar.given
   import scala.language.implicitConversions
   ft match {
@@ -53,18 +54,18 @@ def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationErr
         cod <- (name :: ctx) {
           fCod.toTerm()
         }
-      } yield dom ->: cod
+      } yield (name, dom) ->: cod
       case FLam(name, fBody) => for {
         body <- (name :: ctx)  {
           fBody.toTerm()
         }
-      } yield lam(body)
+      } yield lam(name, body)
       case FSig(name, fFstTy, fSndTy) => for {
         fstTy <- fFstTy.toTerm()
         sndTy <- (name :: ctx) {
           fSndTy.toTerm()
         }
-      } yield fstTy x sndTy
+      } yield (name, fstTy) x sndTy
       case FPair(fFst, fSnd) => for {
         fst <- fFst.toTerm()
         snd <- fSnd.toTerm()
@@ -114,3 +115,12 @@ class DeBruijnContext()  {
 }
 
 class DeBruijnizationError(msg: String, val offender: FTerm) extends Exception(msg);
+
+def (t: Term) toFTerm() : FTerm = {
+  throw UnsupportedOperationException()
+}
+
+def (t: Term) toFTermDirectly() : FTerm = {
+  import FBuilder.{given, _}
+  throw UnsupportedOperationException()
+}

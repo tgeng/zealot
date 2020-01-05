@@ -26,9 +26,9 @@ enum Reference {
 
 enum Value {
   case Set(level: Int)
-  case Pi(dom: Term, cod: Term)
-  case Lam(body: Term)
-  case Sig(fstTy: Term, sndTy: Term)
+  case Pi(dom: Term, cod: Term)(var name: String)
+  case Lam(body: Term)(var name: String)
+  case Sig(fstTy: Term, sndTy: Term)(var name: String)
   case Pair(fst: Term, snd: Term)
   case Unit
   case Star
@@ -84,9 +84,9 @@ private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
 // }
 
 private def (v: Value) raised(given spec: RaiseSpec) : Value = v match {
-  case Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))
-  case Value.Lam(body) => Value.Lam(body.raised(given spec++))
-  case Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.raised, sndTy.raised(given spec++))
+  case v@Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))(v.name)
+  case v@Value.Lam(body) => Value.Lam(body.raised(given spec++))(v.name)
+  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.raised, sndTy.raised(given spec++))(v.name)
   case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.raised, snd.raised)
   case _ => v
 }
@@ -105,9 +105,9 @@ private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
 }
 
 private def (v: Value) substituted(given spec: SubstituteSpec) : Value = v match {
-  case Value.Pi(dom, cod) => Value.Pi(dom.substituted, cod.substituted(given spec++))
-  case Value.Lam(body) => Value.Lam(body.substituted(given spec++))
-  case Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.substituted, sndTy.substituted(given spec++))
+  case v@Value.Pi(dom, cod) => Value.Pi(dom.substituted, cod.substituted(given spec++))(v.name)
+  case v@Value.Lam(body) => Value.Lam(body.substituted(given spec++))(v.name)
+  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.substituted, sndTy.substituted(given spec++))(v.name)
   case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.substituted, snd.substituted)
   case _ => v
 }
