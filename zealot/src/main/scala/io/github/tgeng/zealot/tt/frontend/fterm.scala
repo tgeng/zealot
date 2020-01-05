@@ -3,8 +3,11 @@ package io.github.tgeng.zealot.tt.frontend
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import io.github.tgeng.zealot.common._
-import io.github.tgeng.zealot.tt.core.Term
 import io.github.tgeng.zealot.tt.core.Builder
+import io.github.tgeng.zealot.tt.core.Context
+import io.github.tgeng.zealot.tt.core.Term
+import io.github.tgeng.zealot.tt.core.Redux
+import io.github.tgeng.zealot.tt.core.Value
 
 
 enum FTerm {
@@ -120,7 +123,45 @@ def (t: Term) toFTerm() : FTerm = {
   throw UnsupportedOperationException()
 }
 
-def (t: Term) toFTermDirectly() : FTerm = {
+// Converts a Term to FTerm directly, assuming there are no name conflicts.
+private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
+  import Term._
+  import Redux._
+  import Value._
   import FBuilder.{given, _}
-  throw UnsupportedOperationException()
+  import scala.language.implicitConversions
+  t match {
+    case Ref(r) => ctx(r) match {
+      case Some(name) => !name
+      case None => throw IllegalArgumentException(s"Reference $r is invalid in context\n$ctx")
+    }
+    case Val(v) => v match {
+      case Set(l) => set(l)
+      case v@Pi(dom, cod) => {
+        val fDom = dom.toFTermDirectly()
+        val fCod = (v.name :: ctx) {
+          cod.toFTermDirectly()
+        }
+        (v.name, fDom) ->: fCod
+      }
+      case v@Lam(body) => (v.name :: ctx) {
+        \(v.name) =>: body.toFTermDirectly()
+      }
+      case v@Sig(a, b) => {
+        val fA = a.toFTermDirectly()
+        val fB = (v.name :: ctx) {
+          b.toFTermDirectly()
+        }
+        (v.name, fA) x fB
+      }
+      case Pair(a, b) => (a.toFTermDirectly(), b.toFTermDirectly())
+      case Unit => unit
+      case Star => *
+    }
+    case Rdx(r) => r match {
+      case App(fn, arg) => (fn.toFTermDirectly())(arg.toFTermDirectly())
+      case Prj1(pair) => p1(pair.toFTermDirectly())
+      case Prj2(pair) => p2(pair.toFTermDirectly())
+    }
+  }
 }

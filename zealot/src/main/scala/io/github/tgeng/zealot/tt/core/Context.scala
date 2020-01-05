@@ -30,6 +30,8 @@ class Context[T] {
   def snapshot : Seq[T] = content.toList
 
   protected def processElement(t: T) : T = t
+
+  override def toString() = content.zipWithIndex.map{ (t, i) => s"  $i: $t" }.mkString("Context {\n", "\n", "\n}")
 }
 
 class TypeContext extends Context[Type] {
