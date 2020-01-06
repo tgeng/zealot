@@ -1,8 +1,10 @@
 package io.github.tgeng.zealot.tt.frontend
 
 import scala.collection.mutable.ArrayBuffer
+import io.github.tgeng.zealot.common._
 import io.github.tgeng.zealot.common.OptionSugar._
 import io.github.tgeng.zealot.tt.core.Binder
+import io.github.tgeng.zealot.tt.core.HasBinder
 import io.github.tgeng.zealot.tt.core.Context
 import io.github.tgeng.zealot.tt.core.Term
 import io.github.tgeng.zealot.tt.core.Redux
@@ -12,7 +14,9 @@ import io.github.tgeng.zealot.tt.core.traverse
 
 def (t: Term) toFTerm()(given ctx: Context[Binder]) : FTerm = {
   t.traverse(new Traverser[Binder](b => b.binder) {
-    override def visitBinder(b: Binder)(given ctx: Context[Binder]) = b.interferers.clear()
+    override def visitBinder(b: Binder)(given ctx: Context[Binder]) = {
+      b.interferers.clear()
+    }
   })
 
   val allBinders = ArrayBuffer[Binder]()
@@ -35,18 +39,27 @@ def (t: Term) toFTerm()(given ctx: Context[Binder]) : FTerm = {
   conflictingBinders
     .sortBy((b, count) => -count)
     .foreach{(b, _) =>
-      b.name = generateUniqueName(b.name, b.interferers.map(_.name).toSet)
+      b.name = generateUniqueName(b.name.ifEmpty("_"), b.interferers.map(_.name).toSet)
     }
 
   t.toFTermDirectly()(given Context())
 }
 
-var i = 0
-
 private def generateUniqueName(proposal: String, existingNames: Set[String]): String = {
-  // TODO(tgeng): use more fancy method to generate names.
-  i += 1
-  s"x_$i"
+  val lastDigitIndex = proposal.lastIndexWhere(Character.isDigit)
+  var (prefix, index) = if (lastDigitIndex == -1) {
+    (proposal, 0)
+  } else {
+    val (prefix, indexString) = proposal.splitAt(lastDigitIndex)
+    (prefix, Integer.parseInt(indexString))
+  }
+
+  var newName = prefix + (index + 1)
+  while(existingNames.contains(newName)) {
+    index += 1
+    newName = prefix + index
+  }
+  newName
 }
 
 // Converts a Term to FTerm directly, assuming there are no name conflicts.
