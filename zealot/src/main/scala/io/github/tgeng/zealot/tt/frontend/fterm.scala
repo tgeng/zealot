@@ -3,11 +3,15 @@ package io.github.tgeng.zealot.tt.frontend
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import io.github.tgeng.zealot.common._
+import io.github.tgeng.zealot.common.OptionSugar._
+import io.github.tgeng.zealot.tt.core.Binder
 import io.github.tgeng.zealot.tt.core.Builder
 import io.github.tgeng.zealot.tt.core.Context
 import io.github.tgeng.zealot.tt.core.Term
 import io.github.tgeng.zealot.tt.core.Redux
 import io.github.tgeng.zealot.tt.core.Value
+import io.github.tgeng.zealot.tt.core.Traverser
+import io.github.tgeng.zealot.tt.core.traverse
 
 
 enum FTerm {
@@ -120,6 +124,19 @@ class DeBruijnContext()  {
 class DeBruijnizationError(msg: String, val offender: FTerm) extends Exception(msg);
 
 def (t: Term) toFTerm() : FTerm = {
+  t.traverse(new Traverser[Unit](_ => ()) {
+    override def visitBinder(b: Binder)(given ctx: Context[Unit]) = b.interferer.clear()
+  })
+
+  t.traverse(new Traverser[Binder](b => b) {
+    override def visitRef(ref: Term.Ref)(given ctx: Context[Binder]) = {
+      ctx.inner(ref.ref)
+        .foreach(
+          _.link(ctx(ref.ref)
+          .orThrow(IllegalStateException(s"Reference ${ref.ref} is invalid in context\n$ctx"))))
+    }
+  })
+
   throw UnsupportedOperationException()
 }
 
@@ -131,10 +148,8 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
   import FBuilder.{given, _}
   import scala.language.implicitConversions
   t match {
-    case Ref(r) => ctx(r) match {
-      case Some(name) => !name
-      case None => throw IllegalArgumentException(s"Reference $r is invalid in context\n$ctx")
-    }
+    case Ref(r) => !ctx(r)
+      .orThrow(IllegalArgumentException(s"Reference $r is invalid in context\n$ctx"))
     case Val(v) => v match {
       case Set(l) => set(l)
       case v@Pi(dom, cod) => {

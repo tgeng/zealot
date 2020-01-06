@@ -19,6 +19,12 @@ class Context[T] {
     case Num(n) => if (n < 0 || n >= content.size) Option.empty else Option(content(n))
   }
 
+  // Gets elements "inside" the binder referenced by the given Reference.
+  def inner(r: Reference) : Traversable[T] = r match {
+    case Idx(i) => content.view.takeRight(i)
+    case Num(n) => content.view.drop(n + 1)
+  }
+
   def +=(tys: T*) = for (ty <- tys) content.append(processElement(ty))
 
   def ++=(tys: Traversable[T]) = this.+=(tys.toSeq : _*)
