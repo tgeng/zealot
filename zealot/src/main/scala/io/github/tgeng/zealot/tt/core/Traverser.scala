@@ -5,7 +5,7 @@ import Reference._
 import Value._
 import Redux._
 
-trait Traverser[T](binderToT: Binder => T) {
+trait Traverser[T](bindingConstructToT: HasBinder => T) {
 
   def visitTerm(t: Term)(given ctx: Context[T]): scala.Unit = t match {
     case r@Ref(_) => visitRef(r)
@@ -25,15 +25,15 @@ trait Traverser[T](binderToT: Binder => T) {
   def visitVal(v: Val)(given ctx: Context[T]) : scala.Unit = v.value match {
     case s@Set(_) => visitSet(s)
     case p@Pi(_, _) => {
-      visitBinder(p)
+      visitBinder(p.binder)
       visitPi(p)
     }
     case l@Lam(_) => {
-      visitBinder(l)
+      visitBinder(l.binder)
       visitLam(l)
     }
     case s@Sig(_, _) => {
-      visitBinder(s)
+      visitBinder(s.binder)
       visitSig(s)
     }
     case p@Pair(_, _) => visitPair(p)
@@ -47,18 +47,18 @@ trait Traverser[T](binderToT: Binder => T) {
 
   def visitPi(p: Pi)(given ctx: Context[T]) : scala.Unit = {
     visitTerm(p.dom)
-    (binderToT(p) :: ctx) {
+    (bindingConstructToT(p) :: ctx) {
       visitTerm(p.cod)
     }
   }
 
-  def visitLam(l: Lam)(given ctx: Context[T]) : scala.Unit = (binderToT(l) :: ctx) {
+  def visitLam(l: Lam)(given ctx: Context[T]) : scala.Unit = (bindingConstructToT(l) :: ctx) {
     visitTerm(l.body)
   }
 
   def visitSig(s: Sig)(given ctx: Context[T]) : scala.Unit = {
     visitTerm(s.fstTy)
-    (binderToT(s) :: ctx) {
+    (bindingConstructToT(s) :: ctx) {
       visitTerm(s.sndTy)
     }
   }

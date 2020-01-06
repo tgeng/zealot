@@ -28,12 +28,11 @@ enum Reference {
 
 // Additional information used during Term -> FTerm conversion. These data does not affect
 // term evaluation and type checking.
-trait Binder {
-  var name: String
+class Binder(var name: String) {
   // All the other binders whose name could interfere with the name of this binder. Semantically
   // this should be a Set respecting object identity. But since the equals and hashcode method of
   // Value does not respect object identity we have to use a Seq here.
-  val interferers: Buffer[Binder]
+  val interferers: Buffer[Binder] = Buffer()
 
   def link(other: Binder) = {
     this.interferers += other
@@ -41,11 +40,15 @@ trait Binder {
   }
 }
 
+trait HasBinder {
+  val binder: Binder
+}
+
 enum Value {
   case Set(level: Int)
-  case Pi(dom: Term, cod: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
-  case Lam(body: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
-  case Sig(fstTy: Term, sndTy: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
+  case Pi(dom: Term, cod: Term)(val binder: Binder) extends Value with HasBinder
+  case Lam(body: Term)(val binder: Binder) extends Value with HasBinder
+  case Sig(fstTy: Term, sndTy: Term)(val binder: Binder) extends Value with HasBinder
   case Pair(fst: Term, snd: Term)
   case Unit
   case Star
@@ -101,9 +104,9 @@ private def (t: Term) raised(given spec: RaiseSpec) : Term = t match {
 // }
 
 private def (v: Value) raised(given spec: RaiseSpec) : Value = v match {
-  case v@Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))(v.name)
-  case v@Value.Lam(body) => Value.Lam(body.raised(given spec++))(v.name)
-  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.raised, sndTy.raised(given spec++))(v.name)
+  case v@Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))(v.binder)
+  case v@Value.Lam(body) => Value.Lam(body.raised(given spec++))(v.binder)
+  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.raised, sndTy.raised(given spec++))(v.binder)
   case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.raised, snd.raised)
   case _ => v
 }
@@ -122,9 +125,9 @@ private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
 }
 
 private def (v: Value) substituted(given spec: SubstituteSpec) : Value = v match {
-  case v@Value.Pi(dom, cod) => Value.Pi(dom.substituted, cod.substituted(given spec++))(v.name)
-  case v@Value.Lam(body) => Value.Lam(body.substituted(given spec++))(v.name)
-  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.substituted, sndTy.substituted(given spec++))(v.name)
+  case v@Value.Pi(dom, cod) => Value.Pi(dom.substituted, cod.substituted(given spec++))(v.binder)
+  case v@Value.Lam(body) => Value.Lam(body.substituted(given spec++))(v.binder)
+  case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.substituted, sndTy.substituted(given spec++))(v.binder)
   case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.substituted, snd.substituted)
   case _ => v
 }

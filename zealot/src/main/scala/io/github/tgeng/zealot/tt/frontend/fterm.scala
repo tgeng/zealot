@@ -124,12 +124,12 @@ class DeBruijnContext()  {
 class DeBruijnizationError(msg: String, val offender: FTerm) extends Exception(msg);
 
 def (t: Term) toFTerm()(given ctx: Context[Binder]) : FTerm = {
-  t.traverse(new Traverser[Binder](b => b) {
+  t.traverse(new Traverser[Binder](b => b.binder) {
     override def visitBinder(b: Binder)(given ctx: Context[Binder]) = b.interferers.clear()
   })
 
   val allBinders = ArrayBuffer[Binder]()
-  t.traverse(new Traverser[Binder](b => b) {
+  t.traverse(new Traverser[Binder](b => b.binder) {
     override def visitRef(ref: Term.Ref)(given ctx: Context[Binder]) = {
       val b = ctx(ref.ref).orThrow(IllegalStateException(s"Reference ${ref.ref} is invalid in context\n$ctx"))
       allBinders += b
@@ -176,20 +176,20 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
       case Set(l) => set(l)
       case v@Pi(dom, cod) => {
         val fDom = dom.toFTermDirectly()
-        val fCod = (v.name :: ctx) {
+        val fCod = (v.binder.name :: ctx) {
           cod.toFTermDirectly()
         }
-        (v.name, fDom) ->: fCod
+        (v.binder.name, fDom) ->: fCod
       }
-      case v@Lam(body) => (v.name :: ctx) {
-        \(v.name) =>: body.toFTermDirectly()
+      case v@Lam(body) => (v.binder.name :: ctx) {
+        \(v.binder.name) =>: body.toFTermDirectly()
       }
       case v@Sig(a, b) => {
         val fA = a.toFTermDirectly()
-        val fB = (v.name :: ctx) {
+        val fB = (v.binder.name :: ctx) {
           b.toFTermDirectly()
         }
-        (v.name, fA) x fB
+        (v.binder.name, fA) x fB
       }
       case Pair(a, b) => (a.toFTermDirectly(), b.toFTermDirectly())
       case Unit => unit

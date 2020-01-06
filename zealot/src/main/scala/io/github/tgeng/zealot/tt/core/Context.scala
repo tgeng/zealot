@@ -61,9 +61,9 @@ private def (n: Neutral)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) :
 }
 
 private def (v: Value)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Value = v match {
-  case v@Pi(a, b) => Pi(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.name)
-  case v@Lam(a) => Lam(a.replaceIdxWithNum(offset + 1))(v.name)
-  case v@Sig(a, b) => Sig(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.name)
+  case v@Pi(a, b) => Pi(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.binder)
+  case v@Lam(a) => Lam(a.replaceIdxWithNum(offset + 1))(v.binder)
+  case v@Sig(a, b) => Sig(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.binder)
   case Pair(a, b) => Pair(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset))
   case _ => v
 }

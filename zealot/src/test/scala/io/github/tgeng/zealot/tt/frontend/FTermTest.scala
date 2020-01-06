@@ -181,8 +181,9 @@ class FTermTest {
     import FBuilder.{given, _}
     Iterable(
       \("x") =>: !"x",
-      \("x", "y") =>: (!"x")(!"x"),
+      \("x", "x") =>: (!"x")(!"x"),
       \("x", "y") =>: (!"x")(!"y"),
+      \("x") =>: (!"x")(\("x") =>: !"x"),
       fComposeTy
     ) shouldAll remainTheSameFTermAfterRoundTrip
   }
