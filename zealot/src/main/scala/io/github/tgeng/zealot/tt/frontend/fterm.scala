@@ -104,7 +104,7 @@ class DeBruijnContext()  {
     }
   }
 
-  def ++=(names: Traversable[String]) = this.+=(names.toSeq : _*)
+  def ++=(names: Iterable[String]) = this.+=(names.toSeq : _*)
 
   def ::[T](name: String)(action: => T) : T = {
     this += name
@@ -123,21 +123,43 @@ class DeBruijnContext()  {
 
 class DeBruijnizationError(msg: String, val offender: FTerm) extends Exception(msg);
 
-def (t: Term) toFTerm() : FTerm = {
-  t.traverse(new Traverser[Unit](_ => ()) {
-    override def visitBinder(b: Binder)(given ctx: Context[Unit]) = b.interferer.clear()
+def (t: Term) toFTerm()(given ctx: Context[Binder]) : FTerm = {
+  t.traverse(new Traverser[Binder](b => b) {
+    override def visitBinder(b: Binder)(given ctx: Context[Binder]) = b.interferers.clear()
   })
 
+  val allBinders = ArrayBuffer[Binder]()
   t.traverse(new Traverser[Binder](b => b) {
     override def visitRef(ref: Term.Ref)(given ctx: Context[Binder]) = {
-      ctx.inner(ref.ref)
-        .foreach(
-          _.link(ctx(ref.ref)
-          .orThrow(IllegalStateException(s"Reference ${ref.ref} is invalid in context\n$ctx"))))
+      val b = ctx(ref.ref).orThrow(IllegalStateException(s"Reference ${ref.ref} is invalid in context\n$ctx"))
+      allBinders += b
+      ctx.inner(ref.ref).foreach( _.link(b))
     }
   })
 
-  throw UnsupportedOperationException()
+  val conflictingBinders = ArrayBuffer[(Binder, Int)]()
+  for (b <- allBinders) {
+    val numConflictingBinders : Int = b.interferers.count(_.name == b.name)
+    if (numConflictingBinders != 0) {
+      conflictingBinders += ((b, numConflictingBinders))
+    }
+  }
+
+  conflictingBinders
+    .sortBy((b, count) => -count)
+    .foreach{(b, _) =>
+      b.name = generateUniqueName(b.name, b.interferers.map(_.name).toSet)
+    }
+
+  t.toFTermDirectly()(given Context())
+}
+
+var i = 0
+
+private def generateUniqueName(proposal: String, existingNames: Set[String]): String = {
+  // TODO(tgeng): use more fancy method to generate names.
+  i += 1
+  s"x_$i"
 }
 
 // Converts a Term to FTerm directly, assuming there are no name conflicts.

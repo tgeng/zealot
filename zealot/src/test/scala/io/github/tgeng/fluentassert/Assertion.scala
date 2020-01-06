@@ -4,6 +4,7 @@ import org.junit.Assert._
 
 def [T] (subject: T) should(assertion: Assertion[T]) = assertion(subject, true)
 def [T] (subject: T) shouldNot(assertion: Assertion[T]) = assertion(subject, false)
+def [T] (subjects: Iterable[T]) shouldAll(assertion: Assertion[T]) = subjects.foreach(assertion(_, true))
 
 def equal[T](target: T) = Assertion[T] {(t, objective) =>
   if (objective && t != target) {

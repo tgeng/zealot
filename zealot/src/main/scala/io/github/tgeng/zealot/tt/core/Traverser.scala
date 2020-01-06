@@ -92,4 +92,5 @@ trait Traverser[T](binderToT: Binder => T) {
   }
 }
 
-def [T](t: Term) traverse(traverser: Traverser[T]) : scala.Unit = traverser.visitTerm(t)(given Context())
+def [T](t: Term) traverse(traverser: Traverser[T])(given ctx: Context[T]) : scala.Unit =
+  traverser.visitTerm(t)

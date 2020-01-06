@@ -20,14 +20,14 @@ class Context[T] {
   }
 
   // Gets elements "inside" the binder referenced by the given Reference.
-  def inner(r: Reference) : Traversable[T] = r match {
+  def inner(r: Reference) : Iterable[T] = r match {
     case Idx(i) => content.view.takeRight(i)
     case Num(n) => content.view.drop(n + 1)
   }
 
   def +=(tys: T*) = for (ty <- tys) content.append(processElement(ty))
 
-  def ++=(tys: Traversable[T]) = this.+=(tys.toSeq : _*)
+  def ++=(tys: Iterable[T]) = this.+=(tys.toSeq : _*)
 
   def ::[R](ty: T) : (=> R) => R = processElement(ty) :: content
 

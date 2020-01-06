@@ -33,19 +33,19 @@ trait Binder {
   // All the other binders whose name could interfere with the name of this binder. Semantically
   // this should be a Set respecting object identity. But since the equals and hashcode method of
   // Value does not respect object identity we have to use a Seq here.
-  val interferer: Buffer[Binder]
+  val interferers: Buffer[Binder]
 
   def link(other: Binder) = {
-    this.interferer += other
-    other.interferer += this
+    this.interferers += other
+    other.interferers += this
   }
 }
 
 enum Value {
   case Set(level: Int)
-  case Pi(dom: Term, cod: Term)(var name: String, val interferer: Buffer[Binder] = Buffer()) extends Value with Binder
-  case Lam(body: Term)(var name: String, val interferer: Buffer[Binder] = Buffer()) extends Value with Binder
-  case Sig(fstTy: Term, sndTy: Term)(var name: String, val interferer: Buffer[Binder] = Buffer()) extends Value with Binder
+  case Pi(dom: Term, cod: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
+  case Lam(body: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
+  case Sig(fstTy: Term, sndTy: Term)(var name: String, val interferers: Buffer[Binder] = Buffer()) extends Value with Binder
   case Pair(fst: Term, snd: Term)
   case Unit
   case Star
