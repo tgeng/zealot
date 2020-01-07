@@ -172,6 +172,10 @@ class FTermTest {
     Iterable(
       lam(!0),
       lam(lam((!0)(!1))),
+      lam(*),
+      lam((lam(!1) x lam(!0))),
+      lam((lam(!1) x lam(!1))),
+      lam((lam(!1) x lam(!2))),
       composeTy,
     ) shouldAll remainTheSameTermAfterRoundTrip
   }
@@ -184,7 +188,8 @@ class FTermTest {
       \("x", "x") =>: (!"x")(!"x"),
       \("x", "y") =>: (!"x")(!"y"),
       \("x") =>: (!"x")(\("x") =>: !"x"),
-      fComposeTy
+      \("") =>: *,
+      fComposeTy,
     ) shouldAll remainTheSameFTermAfterRoundTrip
   }
 }
