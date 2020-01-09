@@ -51,7 +51,7 @@ private def generateUniqueName(proposal: String, existingNames: Set[String]): St
     (proposal, 0)
   } else {
     val (prefix, indexString) = proposal.splitAt(lastDigitIndex)
-    (prefix, Integer.parseInt(indexString))
+    (prefix, indexString.toInt)
   }
 
   var newName = prefix + (index + 1)
