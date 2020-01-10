@@ -1,5 +1,12 @@
 package io.github.tgeng.zealot.parsec
 
+class ParserState[+I](val content: IndexedSeq[I], var position: Int, var commitPosition: Int)
+
+case class ParserError[-I](
+  val position: Int,
+  val failureParser: Parser[I, ?],
+  val cause: ParserError[I] | Null)
+
 private val mapFlatMapKind = AnyRef()
 
 trait Parser[-I, +T]() {
@@ -7,6 +14,9 @@ trait Parser[-I, +T]() {
   def kind : Any = this
   def parse(input: ParserState[I]) : Either[ParserError[I], T] = {
     val startPosition = input.position
+    if (startPosition >= input.content.size) {
+      return Left(ParserError(startPosition, this, null))
+    }
     val result = parseImpl(input)
     result match {
       case Right(t) => Right(t)
@@ -43,10 +53,6 @@ def [I, T, R](p: Parser[I, T]) flatMap(f: T => Parser[I, R]) : Parser[I, R] = {
   }
 }
 
-class ParserState[+I](val content: IndexedSeq[I], var position: Int, var commitPosition: Int)
-
-case class ParserError[-I](val position: Int, failureParser: Parser[I, ?], val cause: ParserError[I] | Null)
-
 def [I, T](p: Parser[I, T]) withNameFn(nameTransformer: String => String) = new Parser[I, T] {
   override def parse(input: ParserState[I]) : Either[ParserError[I], T] = p.parse(input) match {
     case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
@@ -80,12 +86,32 @@ def pure[I, T](t: T, aName: String = "<val>") = new Parser[I, T] {
   override def parseImpl(input: ParserState[I]) = Right(t)
 }
 
-val empty: Parser[Any, Unit] = pure((), "<empty>")
+def not[I](p: Parser[I, ?]) = new Parser[I, Unit] {
+  override def parse(input: ParserState[I]) = {
+    val position = input.position
+    val commitPosition = input.commitPosition
+    val result = p.parse(input) match {
+      case Right(_) => Left(ParserError(position, this, null))
+      case Left(_) => Right(())
+    }
+    input.position = position
+    input.commitPosition = commitPosition
+    result
+  }
+  override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
+}
 
-val eos = new Parser[Any, Unit] {
-  override def parseImpl(input: ParserState[Any]) =
-    if (input.position == input.content.size) Right(())
-    else Left(ParserError(input.position, this, null))
+def satisfy[I](predicate: I => Boolean) = new Parser[I, I] {
+  override def parseImpl(input: ParserState[I]) = {
+    val position = input.position
+    val t = input.content(position)
+    input.position += 1
+    if (predicate(t)) {
+      Right(t)
+    } else {
+      Left(ParserError(position, this, null))
+    }
+  }
 }
 
 def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {

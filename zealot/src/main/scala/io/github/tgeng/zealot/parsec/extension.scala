@@ -1,32 +1,62 @@
 package io.github.tgeng.zealot.parsec
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
-def [I, T](p: => Parser[I, T])* : Parser[I, IndexedSeq[T]] = new Parser[I, IndexedSeq[T]]{
+val empty: Parser[Any, Unit] = pure((), "<empty>")
+def any[I] : Parser[I, I] = satisfy(_ => true)
+val eof : Parser[Any, Unit] = not(any)
+val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ())
+
+def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]]{
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
-    val result = scala.collection.mutable.ArrayBuffer[T]()
+    val result = ArrayBuffer[T]()
     breakable {
       val startPosition = input.position
       p.parse(input) match {
         case Right(t) => result += t
-        case Left(e) => {
+        case Left(e) if (startPosition >= input.commitPosition) => {
           input.position = startPosition
           break
         }
+        case Left(e) => return Left(e)
       }
     }
     Right(result.toIndexedSeq)
   }
 }
 
-def [I, T](p: => Parser[I, T])+ : Parser[I, IndexedSeq[T]] = for {
+def [I, T](p: Parser[I, T])+ : Parser[I, IndexedSeq[T]] = for {
   t <- p
   ts <- p*
 } yield t +: ts
 
+def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] = p.map(Some[T]) | empty.map(_ => None)
+
+def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]] {
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
+    val position = input.position;
+    val result = new ArrayBuffer[T](count)
+    for (i <- 0 until count) {
+      p.parse(input) match {
+        case Right(t) => result += t
+        case Left(e) => return Left(ParserError(position, this, e))
+      }
+    }
+    Right(result.toIndexedSeq)
+  }
+}
+
+def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = for {
+  first <- p
+  rest <- (s >> p)*
+} yield first +: rest
+
+def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = p sepBy1 s | empty
+
 private def prefixSuffixKind = AnyRef()
 
-def [I, T](p1: Parser[I, T]) :>> (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {
+def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {
   override def kind = prefixSuffixKind
   override def parseImpl(input: ParserState[I]) = for {
     r1 <- p1.parse(input)
@@ -34,7 +64,7 @@ def [I, T](p1: Parser[I, T]) :>> (p2: => Parser[I, T]) : Parser[I, T] = new Pars
   } yield r2
 }
 
-def [I, T](p1: Parser[I, T]) <<: (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {
+def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = new Parser[I, T] {
   override def kind = prefixSuffixKind
   override def parseImpl(input: ParserState[I]) = for {
     r1 <- p1.parse(input)
@@ -42,12 +72,12 @@ def [I, T](p1: Parser[I, T]) <<: (p2: => Parser[I, T]) : Parser[I, T] = new Pars
   } yield r1
 }
 
-def [I, F, T](fnP: Parser[I, F => T]) $ (fP: => Parser[I, F]) : Parser[I, T] = for {
+def [I, F, T](fnP: Parser[I, F => T]) apply (fP: => Parser[I, F]) : Parser[I, T] = for {
   fn <- fnP
   f <- fP
 } yield fn(f)
 
-def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) $ (
+def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   ) : Parser[I, T] = for {
@@ -56,7 +86,7 @@ def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) $ (
   f2 <- f2P
 } yield fn(f1, f2)
 
-def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) $ (
+def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],
@@ -67,7 +97,7 @@ def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) $ (
   f3 <- f3P
 } yield fn(f1, f2, f3)
 
-def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) $ (
+def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],
