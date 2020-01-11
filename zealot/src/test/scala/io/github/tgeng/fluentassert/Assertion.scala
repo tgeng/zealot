@@ -16,6 +16,9 @@ def equal[T](target: T) = Assertion[T] {(t, objective) =>
   }
 }
 
+def succeedWith[L, R](target: R) : Assertion[Either[L, R]] = equal(Right(target))
+def failWith[L, R](target: L) : Assertion[Either[L, R]] = equal(Left(target))
+
 class Assertion[T](failureMessage: (T, Boolean) => Option[String]) {
 
   def apply(subject: T, objective: Boolean) = {
