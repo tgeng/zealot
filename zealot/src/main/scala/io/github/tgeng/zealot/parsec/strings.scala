@@ -3,7 +3,7 @@ package io.github.tgeng.zealot.parsec
 import scala.language.implicitConversions
 import scala.util.matching.Regex
 
-val parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex) => new Parser {
+given parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex) => new Parser {
   override def detailImpl = s"/$r/"
   override def parseImpl(input: ParserState[Char]) : Either[ParserError[Char] | Null, String] = {
     r.findPrefixOf(input.content.slice(input.position, input.content.length)) match {
@@ -16,7 +16,7 @@ val parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex) =
   }
 }
 
-val parserMatchingString : Conversion[String, Parser[Char, String]] = (s: String) => new Parser {
+given parserMatchingString : Conversion[String, Parser[Char, String]] = (s: String) => new Parser {
   override def detailImpl = "\"" + s + "\""
   override def parseImpl(input: ParserState[Char]) : Either[ParserError[Char] | Null, String] = {
     if (input.content.slice(input.position, input.position + s.length) startsWith s) {
@@ -28,4 +28,4 @@ val parserMatchingString : Conversion[String, Parser[Char, String]] = (s: String
   }
 }
 
-val parserMatchingChar : Conversion[Char, Parser[Char, Char]] = (c: Char) => satisfy[Char](_ == c) withName s"'$c'"
+given parserMatchingChar : Conversion[Char, Parser[Char, Char]] = (c: Char) => satisfy[Char](_ == c) withName s"'$c'"
