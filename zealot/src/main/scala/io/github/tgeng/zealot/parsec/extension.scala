@@ -3,10 +3,10 @@ package io.github.tgeng.zealot.parsec
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
-val empty: Parser[Any, Unit] = pure((), "<empty>")
-def any[I] : Parser[I, I] = satisfy(_ => true)
-val eof : Parser[Any, Unit] = not(any)
-val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ())
+val empty: Parser[Any, Unit] = pure(()) withName "<empty>"
+def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
+val eof : Parser[Any, Unit] = not(any) withName "eof"
+val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
 
 def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]]{
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
@@ -54,10 +54,10 @@ def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] 
 
 def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = p sepBy1 s | empty
 
-private def prefixSuffixKind = AnyRef()
+private val prefixSuffixKind : Kind = Kind(4)
 
 def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {
-  override def kind = prefixSuffixKind
+  override val kind = prefixSuffixKind
   override def parseImpl(input: ParserState[I]) = for {
     r1 <- p1.parse(input)
     r2 <- p2.parse(input)
@@ -65,7 +65,7 @@ def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = new Parse
 }
 
 def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = new Parser[I, T] {
-  override def kind = prefixSuffixKind
+  override val kind = prefixSuffixKind
   override def parseImpl(input: ParserState[I]) = for {
     r1 <- p1.parse(input)
     r2 <- p2.parse(input)
