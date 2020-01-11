@@ -9,7 +9,10 @@ val eof : Parser[Any, Unit] = not(any) withName "eof"
 val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
 
 def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]]{
+  override val kind = Kind(8)
+  override def detailImpl = p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
+    import scala.util.control.NonLocalReturns._
     val result = ArrayBuffer[T]()
     breakable {
       val startPosition = input.position
@@ -19,93 +22,91 @@ def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]]{
           input.position = startPosition
           break
         }
-        case Left(e) => return Left(e)
+        case Left(e) => returning{ Left(e) }
       }
     }
     Right(result.toIndexedSeq)
   }
 }
 
-def [I, T](p: Parser[I, T])+ : Parser[I, IndexedSeq[T]] = for {
+def [I, T](p: Parser[I, T])+ : Parser[I, IndexedSeq[T]] = (for {
   t <- p
   ts <- p*
-} yield t +: ts
+} yield t +: ts) withName s"${p.name(Kind(7))}+"
 
-def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] = p.map(Some[T]) | empty.map(_ => None)
+def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] = (p.map(Some[T]) | empty.map(_ => None)) withName p.name(Kind(10))
 
 def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]] {
+  override val kind = Kind(8)
+  override def detailImpl = s"$count * " + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
+    import scala.util.control.NonLocalReturns._
     val position = input.position;
     val result = new ArrayBuffer[T](count)
     for (i <- 0 until count) {
       p.parse(input) match {
         case Right(t) => result += t
-        case Left(e) => return Left(ParserError(position, this, e))
+        case Left(e) => returning { Left(ParserError(position, this, e)) }
       }
     }
     Right(result.toIndexedSeq)
   }
 }
 
-def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = for {
+def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = (for {
   first <- p
   rest <- (s >> p)*
-} yield first +: rest
+} yield first +: rest) withName s"${p.name(Kind(4))} sepBy1 ${s.name(Kind(4))}"
 
-def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = p sepBy1 s | empty
+def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
+  (p sepBy1 s | empty) withName s"${p.name(Kind(4))} sepBy ${s.name(Kind(4))}"
 
-private val prefixSuffixKind : Kind = Kind(4)
+def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = (for {
+  _ <- p1
+  t <- p2
+} yield t) withName p1.name(Kind(4)) + " >> " + p2.name(Kind(4))
 
-def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T] {
-  override val kind = prefixSuffixKind
-  override def parseImpl(input: ParserState[I]) = for {
-    r1 <- p1.parse(input)
-    r2 <- p2.parse(input)
-  } yield r2
-}
+def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = (for {
+  t <- p1
+  _ <- p2
+} yield t) withName p1.name(Kind(4)) + " << " + p2.name(Kind(4))
 
-def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = new Parser[I, T] {
-  override val kind = prefixSuffixKind
-  override def parseImpl(input: ParserState[I]) = for {
-    r1 <- p1.parse(input)
-    r2 <- p2.parse(input)
-  } yield r1
-}
-
-def [I, F, T](fnP: Parser[I, F => T]) apply (fP: => Parser[I, F]) : Parser[I, T] = for {
+def [I, F, T](fnP: Parser[I, F => T]) apply(
+  fP: => Parser[I, F]
+  ) : Parser[I, T] = (for {
   fn <- fnP
   f <- fP
-} yield fn(f)
+} yield fn(f)) withName s"${fnP.name(Kind(10))}(${fP.name()})"
 
-def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply (
+def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
-  ) : Parser[I, T] = for {
+  ) : Parser[I, T] = (for {
   fn <- fnP
   f1 <- f1P
   f2 <- f2P
-} yield fn(f1, f2)
+} yield fn(f1, f2)) withName s"${fnP.name(Kind(10))}(${f1P.name()}, ${f2P.name()})"
 
-def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply (
+def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],
-  ) : Parser[I, T] = for {
+  ) : Parser[I, T] = (for {
   fn <- fnP
   f1 <- f1P
   f2 <- f2P
   f3 <- f3P
-} yield fn(f1, f2, f3)
+} yield fn(f1, f2, f3)) withName s"${fnP.name(Kind(10))}(${f1P.name()}, ${f2P.name()}, ${f3P.name()})"
 
-def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply (
+def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],
   f4P: => Parser[I, F4],
-  ) : Parser[I, T] = for {
+  ) : Parser[I, T] = (for {
   fn <- fnP
   f1 <- f1P
   f2 <- f2P
   f3 <- f3P
   f4 <- f4P
-} yield fn(f1, f2, f3, f4)
+} yield fn(f1, f2, f3, f4)) withName s"${fnP.name(Kind(10))}(${f1P.name()}, ${f2P.name()}, ${f3P.name()}, ${f4P.name()})"
