@@ -58,9 +58,11 @@ def [I, T, R](p: Parser[I, T]) map(f: T => R): Parser[I, R] = {
   }
 }
 
+private val flatMapKind = Kind(5, "flatMap")
+
 def [I, T, R](p: Parser[I, T]) flatMap(f: T => Parser[I, R]) : Parser[I, R] = {
   var nextParser : Parser[I, R] | Null = null
-  new Parser[I, R](Kind(5, "flatMap")) {
+  new Parser[I, R](flatMapKind) {
     override def detailImpl = {
       val np = nextParser
       p.name(kind) + " " + (if (np == null) "<?>" else np.name(kind))
@@ -95,7 +97,9 @@ def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = new Parse
   override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
 }
 
-def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](Kind(5, "!")) {
+private val commitToKind = Kind(5, "!")
+
+def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](commitToKind) {
   override def detailImpl = "!" + p.name(kind)
   override def parse(input: ParserState[I]) : Either[ParserError[I], T] = {
     input.commitPosition = input.position
@@ -120,7 +124,9 @@ def pure[I, T](t: T) = new Parser[I, T]() {
   override def parseImpl(input: ParserState[I]) = Right(t)
 }
 
-def not[I](p: Parser[I, ?]) = new Parser[I, Unit](Kind(5, "not")) {
+private val notKind = Kind(5, "not")
+
+def not[I](p: Parser[I, ?]) = new Parser[I, Unit](notKind) {
   override def detailImpl = "not " + p.name(kind)
   override def parse(input: ParserState[I]) = {
     val position = input.position
@@ -153,7 +159,9 @@ def satisfy[I](predicate: I => Boolean) = new Parser[I, I]() {
   }
 }
 
-def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T](Kind(1, "|")) {
+private val orKind = Kind(1, "|")
+
+def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T](orKind) {
   override def detailImpl = p1.name(kind) + " | " + p2.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, T] = {
     val startPosition = input.position

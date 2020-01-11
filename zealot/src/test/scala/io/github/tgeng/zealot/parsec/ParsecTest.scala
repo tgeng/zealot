@@ -1,8 +1,8 @@
 package io.github.tgeng.zealot.parsec
 
+import scala.language.implicitConversions
 import org.junit.Test
 import io.github.tgeng.fluentassert._
-import scala.language.implicitConversions
 import io.github.tgeng.zealot.parsec._
 import io.github.tgeng.zealot.parsec.Strings.given
 
@@ -30,15 +30,42 @@ class ParsecTest {
   }
 
   @Test
-  def `parse real number` = {
-    val realNumber : Parser[Char, Double] = for {
-      sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
-      beforePoint <- "[0-9]+".r
-      afterPoint <- (('.' >> !"[0-9]+".r)?)
-        .map(_.map(s => s.toInt / math.pow(10.0, s.size))
-              .getOrElse(0.0))
-    } yield sign * (beforePoint.toInt + afterPoint)
+  def `or operator` = {
+    val abcd = "a" | "b" | "c" | "d"
+    abcd.parse("a") should succeedWith("a")
+    abcd.parse("b") should succeedWith("b")
+    abcd.parse("x") should failWithMessage("""
+      0: "d"
+      0: "a" | "b" | "c" | "d"
+    """)
+  }
 
+  @Test
+  def `commit operator` = {
+    val oct = "0" >> !"[0-7]+".r withName "oct"
+    val hex = "0x" >> !"[0-9a-f]+".r withName "hex"
+    val octOrHex = hex | oct | ".*".r
+    val manyHex = (hex+)
+
+    octOrHex.parse("0xaaf") should succeedWith("aaf")
+    octOrHex.parse("0123") should succeedWith("123")
+    octOrHex.parse("0abc") should failWithMessage("""
+      1: !/[0-7]+/
+      0: oct
+      0: hex | oct | /.*/
+    """)
+  }
+
+  val realNumber : Parser[Char, Double] = for {
+    sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
+    beforePoint <- "[0-9]+".r
+    afterPoint <- (('.' >> !"[0-9]+".r)?)
+      .map(_.map(s => s.toInt / math.pow(10.0, s.size))
+            .getOrElse(0.0))
+  } yield sign * (beforePoint.toInt + afterPoint)
+
+  @Test
+  def `parse real number` = {
     realNumber.parse("2") should succeedWith(2.0)
     realNumber.parse("-50") should succeedWith(-50.0)
     realNumber.parse("-50.25") should succeedWith(-50.25)
@@ -46,14 +73,12 @@ class ParsecTest {
     realNumber.parse("123a") should succeedWith(123)
     realNumber.parse("abc") should failWithMessage( """
       0: /[0-9]+/
-      0: /[0-9]+/ <?>
       0: '-'? /[0-9]+/ <?>
     """)
     realNumber.parse("4.") should failWithMessage( """
       2: !/[0-9]+/
       1: '.' >> !/[0-9]+/
       1: ('.' >> !/[0-9]+/)?
-      0: /[0-9]+/ ('.' >> !/[0-9]+/)?
       0: '-'? /[0-9]+/ ('.' >> !/[0-9]+/)?
     """)
   }

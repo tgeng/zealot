@@ -7,6 +7,7 @@ val empty: Parser[Any, Unit] = pure(()) withName "<empty>"
 def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
 val eof : Parser[Any, Unit] = not(any) withName "<eof>"
 val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
+def anyOf[I](candidate : Seq[I]) : Parser[I, I] = satisfy(candidate.contains(_))
 
 def suffixKind = Kind(9, "suffix")
 
@@ -41,7 +42,9 @@ def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] =
     suffixKind
   )
 
-def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](Kind(8, "n*_")) {
+private val repeatKind = Kind(8, "n*_")
+
+def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatKind) {
   override def detailImpl = s"$count * " + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
     import scala.util.control.NonLocalReturns._
