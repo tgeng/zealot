@@ -1,6 +1,6 @@
 package io.github.tgeng.zealot.parsec
 
-val rootKind = Kind(-1)
+val rootKind = Kind(-1, "root")
 
 class ParserState[+I](val content: IndexedSeq[I], var position: Int, var commitPosition: Int)
 
@@ -17,11 +17,11 @@ case class ParserError[-I](
     }
   }
 
-class Kind(val precedence: Int)
+class Kind(val precedence: Int, val name: String)
 
 trait Parser[-I, +T](
   // The kind of this parser. This is used to merge parsers of the same kind during error reporting.
-  val kind : Kind = Kind(10)) {
+  val kind : Kind = Kind(10, "default")) {
   def name(parentKind : Kind = rootKind) : String = detail(parentKind)
   def detail(parentKind : Kind = rootKind) : String = {
     if (parentKind.precedence > kind.precedence) s"($detailImpl)"
@@ -50,10 +50,8 @@ trait Parser[-I, +T](
   override def toString() = s"Parser{${name()}}"
 }
 
-private val mapFlatMapKind = Kind(5)
-
 def [I, T, R](p: Parser[I, T]) map(f: T => R): Parser[I, R] = {
-  new Parser[I, R](mapFlatMapKind) {
+  new Parser[I, R](p.kind) {
     override def detailImpl = p.name(kind)
     override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, R] =
       p.parse(input).map(f)
@@ -62,7 +60,7 @@ def [I, T, R](p: Parser[I, T]) map(f: T => R): Parser[I, R] = {
 
 def [I, T, R](p: Parser[I, T]) flatMap(f: T => Parser[I, R]) : Parser[I, R] = {
   var nextParser : Parser[I, R] | Null = null
-  new Parser[I, R](mapFlatMapKind) {
+  new Parser[I, R](Kind(5, "flatMap")) {
     override def detailImpl = {
       val np = nextParser
       p.name(kind) + " " + (if (np == null) "<?>" else np.name(kind))
@@ -97,8 +95,8 @@ def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = new Parse
   override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
 }
 
-def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](Kind(5)) {
-  override def detailImpl = p.name(kind)
+def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](Kind(5, "!")) {
+  override def detailImpl = "!" + p.name(kind)
   override def parse(input: ParserState[I]) : Either[ParserError[I], T] = {
     input.commitPosition = input.position
     p.parse(input) match {
@@ -122,7 +120,7 @@ def pure[I, T](t: T) = new Parser[I, T]() {
   override def parseImpl(input: ParserState[I]) = Right(t)
 }
 
-def not[I](p: Parser[I, ?]) = new Parser[I, Unit](Kind(5)) {
+def not[I](p: Parser[I, ?]) = new Parser[I, Unit](Kind(5, "not")) {
   override def detailImpl = "not " + p.name(kind)
   override def parse(input: ParserState[I]) = {
     val position = input.position
@@ -155,7 +153,7 @@ def satisfy[I](predicate: I => Boolean) = new Parser[I, I]() {
   }
 }
 
-def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T](Kind(1)) {
+def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser[I, T](Kind(1, "|")) {
   override def detailImpl = p1.name(kind) + " | " + p2.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, T] = {
     val startPosition = input.position

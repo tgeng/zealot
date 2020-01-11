@@ -8,7 +8,7 @@ def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
 val eof : Parser[Any, Unit] = not(any) withName "<eof>"
 val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
 
-def suffixKind = Kind(9)
+def suffixKind = Kind(9, "suffix")
 
 def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](suffixKind){
   override def detailImpl = p.name(kind) + "*"
@@ -41,7 +41,7 @@ def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] =
     suffixKind
   )
 
-def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](Kind(8)) {
+def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](Kind(8, "n*_")) {
   override def detailImpl = s"$count * " + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
     import scala.util.control.NonLocalReturns._
@@ -57,7 +57,7 @@ def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](Kind(8)
   }
 }
 
-val sepKind = Kind(3)
+val sepKind = Kind(3, "sep")
 
 def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = (for {
   first <- p
@@ -73,7 +73,7 @@ def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
   sepKind
 )
 
-val prefixSuffixKind = Kind(4)
+val prefixSuffixKind = Kind(4, "prefixSuffix")
 
 def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = (for {
   _ <- p1
@@ -91,7 +91,7 @@ def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = (for {
   prefixSuffixKind
 )
 
-def applyKind = Kind(10)
+def applyKind = Kind(10, "apply")
 
 def [I, F, T](fnP: Parser[I, F => T]) apply(
   fP: => Parser[I, F]

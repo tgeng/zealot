@@ -10,10 +10,10 @@ class ParsecTest {
   @Test
   def `basic parsers` = {
     pure(()).parse("") should succeedWith(())
-    val p1 : Parser[Char, Char] = 'c'
-    (p1 | pure(())).parse("") should succeedWith(())
+    pure(1).parse("") should succeedWith(1)
+    position.parse("") should succeedWith(0)
 
-    // val p1 : Parser[Char, Char] = 'c'
+    val p1 : Parser[Char, Char] = 'c'
     p1.parse("c") should succeedWith('c')
     p1.parse("charge") should succeedWith('c')
     p1.parse("abc") should failWithMessage("0: 'c'")
@@ -30,13 +30,31 @@ class ParsecTest {
   }
 
   @Test
-  def `for comprehension` = {
+  def `parse real number` = {
     val realNumber : Parser[Char, Double] = for {
       sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
       beforePoint <- "[0-9]+".r
-      afterPoint <- (('.' >> "[0-9]+".r)?).map(_.map(_.toInt).getOrElse(0))
-    } yield sign * beforePoint.toInt + afterPoint
+      afterPoint <- (('.' >> !"[0-9]+".r)?)
+        .map(_.map(s => s.toInt / math.pow(10.0, s.size))
+              .getOrElse(0.0))
+    } yield sign * (beforePoint.toInt + afterPoint)
 
     realNumber.parse("2") should succeedWith(2.0)
+    realNumber.parse("-50") should succeedWith(-50.0)
+    realNumber.parse("-50.25") should succeedWith(-50.25)
+    realNumber.parse("30.5") should succeedWith(30.5)
+    realNumber.parse("123a") should succeedWith(123)
+    realNumber.parse("abc") should failWithMessage( """
+      0: /[0-9]+/
+      0: /[0-9]+/ <?>
+      0: '-'? /[0-9]+/ <?>
+    """)
+    realNumber.parse("4.") should failWithMessage( """
+      2: !/[0-9]+/
+      1: '.' >> !/[0-9]+/
+      1: ('.' >> !/[0-9]+/)?
+      0: /[0-9]+/ ('.' >> !/[0-9]+/)?
+      0: '-'? /[0-9]+/ ('.' >> !/[0-9]+/)?
+    """)
   }
 }
