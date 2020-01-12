@@ -57,11 +57,16 @@ class ParsecTest {
 
   @Test
   def `commit operator and *` = {
-    val p = ":" >> "\\w+".r
+    val p = ":" >> !"\\w+".r
     val ps = (p*)
 
     ps.parse(":abc") should succeedWith(Seq("abc"))
     ps.parse(":abc:def") should succeedWith(Seq("abc", "def"))
+    ps.parse(":abc:?") should failWithMessage("""
+      5: !/\w+/
+      4: ":" >> !/\w+/
+      0: (":" >> !/\w+/)*
+    """)
   }
 
   val realNumber : Parser[Char, Double] = for {

@@ -13,23 +13,19 @@ def suffixKind = Kind(9, "suffix")
 def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](suffixKind){
   override def detailImpl = p.name(kind) + "*"
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
-    import scala.util.control.Breaks._
-    import scala.util.control.NonLocalReturns._
     val result = ArrayBuffer[T]()
-    breakable {
-      while(true) {
-        val startPosition = input.position
-        p.parse(input) match {
-          case Right(t) => result += t
-          case Left(e) if (startPosition >= input.commitPosition) => {
-            input.position = startPosition
-            break
-          }
-          case Left(e) => returning{ Left(e) }
+    while(true) {
+      val startPosition = input.position
+      p.parse(input) match {
+        case Right(t) => result += t
+        case Left(e) if (startPosition >= input.commitPosition) => {
+          input.position = startPosition
+          return Right(result.toIndexedSeq)
         }
+        case Left(e) => return Left(e)
       }
     }
-    Right(result.toIndexedSeq)
+    throw AssertionError("impossible branch")
   }
 }
 
