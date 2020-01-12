@@ -59,21 +59,19 @@ def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatK
   }
 }
 
-val sepKind = Kind(3, "sep")
+val sepKind = Kind(0, "sep")
 
 def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = (for {
   first <- p
   rest <- (s >> p)*
 } yield first +: rest) withDetailAndKind (
   s"${p.name(sepKind)} sepBy1 ${s.name(sepKind)}",
-  sepKind
-)
+  sepKind)
 
 def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
   (p.sepBy1(s) | empty.map(_ => IndexedSeq.empty)) withDetailAndKind (
   s"${p.name(sepKind)} sepBy ${s.name(sepKind)}",
-  sepKind
-)
+  sepKind)
 
 def [I, T](p: Parser[I, T]) sepByN (count: Int) (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = {
   count match {
@@ -86,8 +84,29 @@ def [I, T](p: Parser[I, T]) sepByN (count: Int) (s: Parser[I, ?]) : Parser[I, In
   }
 } withDetailAndKind (
   s"${p.name(sepKind)} sepByN($count) ${s.name(sepKind)}",
-  sepKind
-)
+  sepKind)
+
+val chainKind = Kind(0, "chain")
+
+def [I, T](elemParser: Parser[I, T]) chainedLeftBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] = (for {
+  first <- elemParser
+  rest <- (for {
+    op <- opParser
+    elem <- elemParser
+  } yield (op, elem))*
+} yield rest.foldLeft(first)((acc, p) => p._1(acc, p._2))).withDetailAndKind(
+  s"${elemParser.name(chainKind)} chainedLeftBy ${opParser.name(chainKind)}",
+  chainKind)
+
+def [I, T](elemParser: Parser[I, T]) chainedRightBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] = (for {
+  front <- ((for {
+    elem <- elemParser
+    op <- opParser
+  } yield (op, elem))*)
+  last <- elemParser
+} yield front.foldRight(last)((p, acc) => p._1(p._2, acc))).withDetailAndKind(
+  s"${elemParser.name(chainKind)} chainedRightBy ${opParser.name(chainKind)}",
+  chainKind)
 
 val prefixSuffixKind = Kind(4, "prefixSuffix")
 
@@ -96,16 +115,14 @@ def [I, T](p1: Parser[I, ?]) >> (p2: => Parser[I, T]) : Parser[I, T] = (for {
   t <- p2
 } yield t) withDetailAndKind (
   p1.name(prefixSuffixKind) + " >> " + p2.name(prefixSuffixKind),
-  prefixSuffixKind
-)
+  prefixSuffixKind)
 
 def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = (for {
   t <- p1
   _ <- p2
 } yield t) withDetailAndKind (
   p1.name(prefixSuffixKind) + " << " + p2.name(prefixSuffixKind),
-  prefixSuffixKind
-)
+  prefixSuffixKind)
 
 def applyKind = Kind(10, "apply")
 
@@ -116,8 +133,7 @@ def [I, F, T](fnP: Parser[I, F => T]) apply(
   f <- fP
 } yield fn(f)) withDetailAndKind(
   s"${fnP.name(applyKind)}(${fP.name()})",
-  applyKind
-)
+  applyKind)
 
 def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
   f1P: => Parser[I, F1],
@@ -128,8 +144,7 @@ def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
   f2 <- f2P
 } yield fn(f1, f2)) withDetailAndKind (
   s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()})",
-  applyKind
-)
+  applyKind)
 
 def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
   f1P: => Parser[I, F1],
@@ -142,8 +157,7 @@ def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
   f3 <- f3P
 } yield fn(f1, f2, f3)) withDetailAndKind (
   s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()}, ${f3P.name()})",
-  applyKind
-)
+  applyKind)
 
 def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
   f1P: => Parser[I, F1],
@@ -158,5 +172,4 @@ def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
   f4 <- f4P
 } yield fn(f1, f2, f3, f4)) withDetailAndKind (
   s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()}, ${f3P.name()}, ${f4P.name()})",
-  applyKind
-)
+  applyKind)

@@ -246,6 +246,17 @@ class ParsecTest {
     }
   }
 
+  @Test
+  def `chainedLeftBy and chainedRightBy` = {
+    val op = ("+" | "-").map(op => ((a: String, b: String) => "(" + a + op + b + ")"))
+    testing(".".r chainedLeftBy op) {
+      "a+b+c" succeedsWith "((a+b)+c)"
+    }
+    testing(".".r chainedRightBy op) {
+      "a+b+c" succeedsWith "(a+(b+c))"
+    }
+  }
+
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r
@@ -281,21 +292,11 @@ class ParsecTest {
     val multiply = parser('*').map(_ => (a: Double, b: Double) => a * b) withName "*"
     val divide = parser('/').map(_ => (a: Double, b: Double) => a / b) withName "/"
 
-    def sumExpr: Parser[Char, Double] = (for {
-      first <- prodExpr
-      rest <- (for {
-        operator <- spaces >> (plus | minus) << spaces
-        operand <- prodExpr
-      } yield (operator, operand))*
-    } yield rest.foldLeft(first)((acc, pair) => pair._1(acc, pair._2))) withName "sumExpr"
+    def sumExpr: Parser[Char, Double] =
+      prodExpr.chainedLeftBy(spaces >> (plus | minus) << spaces) withName "sumExpr"
 
-    def prodExpr: Parser[Char, Double] = (for {
-      first <- term
-      rest <- (for {
-        operator <- spaces >> (multiply | divide) << spaces
-        operand <- term
-      } yield (operator, operand))*
-    } yield rest.foldLeft(first)((acc, pair) => pair._1(acc, pair._2))) withName "prodExpr"
+    def prodExpr: Parser[Char, Double] =
+      term.chainedLeftBy(spaces >> (multiply | divide) << spaces) withName "prodExpr"
 
     def term: Parser[Char, Double] =
       realNumber |
