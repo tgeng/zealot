@@ -12,6 +12,15 @@ class ParsecTest {
     pure(()).parse("") should succeedWith(())
     pure(1).parse("") should succeedWith(1)
     position.parse("") should succeedWith(0)
+    empty.parse("") should succeedWith(())
+    empty.parse("abc") should succeedWith(())
+    any.parse("abc") should succeedWith('a')
+    eof.parse("") should succeedWith(())
+    eof.parse("abc") should failWithMessage("0: <eof>")
+    skip.parse("abc") should succeedWith(())
+    skip.parse("") should failWithMessage("0: <skip>")
+    anyOf("abc").parse("ccc") should  succeedWith('c')
+    anyOf("abc").parse("d") should  failWithMessage("0: <anyOf{a, b, c}>")
 
     val p1 : Parser[Char, Char] = 'c'
     p1.parse("c") should succeedWith('c')
@@ -99,6 +108,31 @@ class ParsecTest {
     identifier.parse("123abc") should failWithMessage("""
       0: not digit
       0: /\w+/ & not keyword & not digit
+    """)
+  }
+
+  @Test
+  def `suffix operators` = {
+    val abc = parser("abc")
+    (abc*).parse("abcabcabd") should succeedWith(Seq("abc", "abc"))
+    (abc*).parse("def") should succeedWith(Seq())
+    (abc+).parse("abcabcabd") should succeedWith(Seq("abc", "abc"))
+    (abc+).parse("def") should failWithMessage("""
+      0: "abc"
+      0: "abc"+
+    """)
+    (abc?).parse("abcabcabd") should succeedWith(Some("abc"))
+    (abc?).parse("def") should succeedWith(None)
+  }
+
+  @Test
+  def `repeat operator` = {
+    val abc3 = 3 * "abc"
+    abc3.parse("abcabcabc") should succeedWith(Seq("abc", "abc", "abc"))
+    abc3.parse("abcabcabcabc") should succeedWith(Seq("abc", "abc", "abc"))
+    abc3.parse("abcabc") should failWithMessage("""
+      6: "abc"
+      0: 3 * "abc"
     """)
   }
 

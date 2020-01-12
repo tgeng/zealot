@@ -6,7 +6,7 @@ val empty: Parser[Any, Unit] = pure(()) withName "<empty>"
 def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
 val eof : Parser[Any, Unit] = not(any) withName "<eof>"
 val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
-def anyOf[I](candidate : Seq[I]) : Parser[I, I] = satisfy(candidate.contains(_))
+def anyOf[I](candidates : Seq[I]) : Parser[I, I] = satisfy[I](candidates.contains(_)) withName s"<anyOf{${candidates.mkString(", ")}}>"
 
 def suffixKind = Kind(9, "suffix")
 
@@ -45,13 +45,14 @@ private val repeatKind = Kind(8, "n*_")
 def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatKind) {
   override def detailImpl = s"$count * " + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
-    import scala.util.control.NonLocalReturns._
     val position = input.position;
     val result = new ArrayBuffer[T](count)
-    for (i <- 0 until count) {
+    var i = 0
+    while (i < count) {
+      i += 1
       p.parse(input) match {
         case Right(t) => result += t
-        case Left(e) => returning { Left(ParserError(position, this, e)) }
+        case Left(e) => return Left(ParserError(position, this, e))
       }
     }
     Right(result.toIndexedSeq)

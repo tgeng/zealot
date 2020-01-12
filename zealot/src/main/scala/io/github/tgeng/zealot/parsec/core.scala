@@ -2,6 +2,8 @@ package io.github.tgeng.zealot.parsec
 
 val rootKind = Kind(-1, "root")
 
+def parser[I, T](p: Parser[I, T]) = p
+
 class ParserState[+I](val content: IndexedSeq[I], var position: Int, var commitPosition: Int)
 
 case class ParserError[-I](
