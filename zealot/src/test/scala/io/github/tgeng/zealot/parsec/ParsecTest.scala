@@ -3,8 +3,7 @@ package io.github.tgeng.zealot.parsec
 import scala.language.implicitConversions
 import org.junit.Test
 import io.github.tgeng.fluentassert._
-import io.github.tgeng.zealot.parsec._
-import io.github.tgeng.zealot.parsec.Strings.given
+import io.github.tgeng.zealot.parsec.{given, _}
 
 class ParsecTest {
   @Test
