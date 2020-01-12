@@ -136,6 +136,32 @@ class ParsecTest {
     """)
   }
 
+  @Test
+  def `sepBy operator` = {
+    val word = "\\w+".r withName "word"
+    val oneOrMore = word sepBy1 ','
+    oneOrMore.parse("abc") should succeedWith(Seq("abc"))
+    oneOrMore.parse("abc,def") should succeedWith(Seq("abc", "def"))
+    oneOrMore.parse("!!") should failWithMessage("""
+      0: word
+      0: word sepBy1 ','
+    """)
+    val many = word sepBy ','
+    many.parse("abc") should succeedWith(Seq("abc"))
+    many.parse("abc,def") should succeedWith(Seq("abc", "def"))
+    many.parse("!!") should succeedWith(Seq())
+
+    val three = word.sepByN(3)(',')
+    three.parse("ab,cd,ef") should succeedWith(Seq("ab", "cd", "ef"))
+    three.parse("ab,cd,ef,gh") should succeedWith(Seq("ab", "cd", "ef"))
+    three.parse("ab,cd") should failWithMessage("""
+      5: ','
+      5: ',' >> word
+      2: 2 * (',' >> word)
+      0: word sepByN(3) ','
+    """)
+  }
+
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r

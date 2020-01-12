@@ -70,8 +70,22 @@ def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] 
 )
 
 def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
-  (p sepBy1 s | empty) withDetailAndKind (
+  (p.sepBy1(s) | empty.map(_ => IndexedSeq.empty)) withDetailAndKind (
   s"${p.name(sepKind)} sepBy ${s.name(sepKind)}",
+  sepKind
+)
+
+def [I, T](p: Parser[I, T]) sepByN (count: Int) (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = {
+  count match {
+    case 0 => empty.map{_ => IndexedSeq.empty[T]}
+    case 1 => p.map(IndexedSeq[T](_))
+    case n => for {
+      first <- p
+      rest <- (n - 1) * (s >> p)
+    } yield first +: rest
+  }
+} withDetailAndKind (
+  s"${p.name(sepKind)} sepByN($count) ${s.name(sepKind)}",
   sepKind
 )
 
