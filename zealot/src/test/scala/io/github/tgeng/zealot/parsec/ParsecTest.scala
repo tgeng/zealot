@@ -162,6 +162,22 @@ class ParsecTest {
     """)
   }
 
+  @Test
+  def `prefix and suffix` = {
+    val word = "\\w+".r withName "word"
+    val braced = '(' >> word << ')'
+    braced.parse("(abc)") should succeedWith("abc")
+    braced.parse("(abc)def") should succeedWith("abc")
+    braced.parse("()") should failWithMessage("""
+      1: word
+      0: '(' >> word << ')'
+    """)
+    braced.parse("abc") should failWithMessage("""
+      0: '('
+      0: '(' >> word << ')'
+    """)
+  }
+
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r

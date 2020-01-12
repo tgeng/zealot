@@ -80,11 +80,10 @@ def [I, T, R](p: Parser[I, T]) flatMap(f: T => Parser[I, R]) : Parser[I, R] = {
 
 def [I, T](p: Parser[I, T]) withDetailFnAndKind(detailTransformer: String => String, newKind : Kind) : Parser[I, T] = new Parser[I, T](newKind) {
   override def detailImpl = detailTransformer(p.detailImpl)
-  override def parse(input: ParserState[I]) : Either[ParserError[I], T] = p.parse(input) match {
-    case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, T] = p.parse(input) match {
+    case Left(ParserError(position, failureParser, cause)) => Left(cause)
     case t@_ => t
   }
-  override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
 }
 
 def [I, T](p: Parser[I, T]) withDetailAndKind(newDetail: String, newKind: Kind) : Parser[I, T] = p.withDetailFnAndKind(_ => newDetail, newKind)
