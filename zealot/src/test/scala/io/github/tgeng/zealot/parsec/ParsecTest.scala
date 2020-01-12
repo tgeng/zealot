@@ -181,13 +181,28 @@ class ParsecTest {
   @Test
   def `apply operator` = {
     val spaces = parser(' ')*
-    val number = ("[0-9]+".r << spaces).map(_.toInt)
-    val sum2 = pure((a: Int, b: Int) => a + b)(number, number)
+    val number = ("[0-9]+".r << spaces).map(_.toInt) withName "number"
+    val sum2 = pure((a: Int, b: Int) => a + b, "Sum2")(number, number)
     sum2.parse("12 34") should succeedWith(46)
-    val sum3 = pure((a: Int, b: Int, c: Int) => a + b + c)(number, number, number)
+    sum2.parse("12 ab") should failWithMessage("""
+      3: /[0-9]+/
+      3: number
+      0: Sum2(number, number)
+    """)
+    val sum3 = pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3")(number, number, number)
     sum3.parse("12 34 56") should succeedWith(102)
-    val sum4 = pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d)(number, number, number, number)
+    sum3.parse("12 34") should failWithMessage("""
+      5: /[0-9]+/
+      5: number
+      0: Sum3(number, number, number)
+    """)
+    val sum4 = pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4")(number, number, number, number)
     sum4.parse("12 34 56 78") should succeedWith(180)
+    sum4.parse("12 34 56 ") should failWithMessage("""
+      9: /[0-9]+/
+      9: number
+      0: Sum4(number, number, number, number)
+    """)
   }
 
   val realNumber : Parser[Char, Double] = for {

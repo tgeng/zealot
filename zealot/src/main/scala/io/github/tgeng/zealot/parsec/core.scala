@@ -120,8 +120,8 @@ val position = new Parser[Any, Int]() {
   override def parseImpl(input: ParserState[Any]) = throw UnsupportedOperationException()
 }
 
-def pure[I, T](t: T) = new Parser[I, T]() {
-  override def detailImpl = "<pure>"
+def pure[I, T](t: T, aName : String = "<pure>") = new Parser[I, T]() {
+  override def detailImpl = aName
   override def parseImpl(input: ParserState[I]) = Right(t)
 }
 
