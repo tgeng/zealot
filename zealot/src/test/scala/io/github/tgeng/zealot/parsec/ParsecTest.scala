@@ -178,6 +178,18 @@ class ParsecTest {
     """)
   }
 
+  @Test
+  def `apply operator` = {
+    val spaces = parser(' ')*
+    val number = ("[0-9]+".r << spaces).map(_.toInt)
+    val sum2 = pure((a: Int, b: Int) => a + b)(number, number)
+    sum2.parse("12 34") should succeedWith(46)
+    val sum3 = pure((a: Int, b: Int, c: Int) => a + b + c)(number, number, number)
+    sum3.parse("12 34 56") should succeedWith(102)
+    val sum4 = pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d)(number, number, number, number)
+    sum4.parse("12 34 56 78") should succeedWith(180)
+  }
+
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r
