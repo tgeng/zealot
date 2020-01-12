@@ -41,11 +41,10 @@ class ParsecTest {
   }
 
   @Test
-  def `commit operator` = {
+  def `commit operator and |` = {
     val oct = "0" >> !"[0-7]+".r withName "oct"
     val hex = "0x" >> !"[0-9a-f]+".r withName "hex"
     val octOrHex = hex | oct | ".*".r
-    val manyHex = (hex+)
 
     octOrHex.parse("0xaaf") should succeedWith("aaf")
     octOrHex.parse("0123") should succeedWith("123")
@@ -54,6 +53,15 @@ class ParsecTest {
       0: oct
       0: hex | oct | /.*/
     """)
+  }
+
+  @Test
+  def `commit operator and *` = {
+    val p = ":" >> "\\w+".r
+    val ps = (p*)
+
+    ps.parse(":abc") should succeedWith(Seq("abc"))
+    ps.parse(":abc:def") should succeedWith(Seq("abc", "def"))
   }
 
   val realNumber : Parser[Char, Double] = for {

@@ -1,7 +1,6 @@
 package io.github.tgeng.zealot.parsec
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks._
 
 val empty: Parser[Any, Unit] = pure(()) withName "<empty>"
 def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
@@ -14,17 +13,20 @@ def suffixKind = Kind(9, "suffix")
 def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](suffixKind){
   override def detailImpl = p.name(kind) + "*"
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
+    import scala.util.control.Breaks._
     import scala.util.control.NonLocalReturns._
     val result = ArrayBuffer[T]()
     breakable {
-      val startPosition = input.position
-      p.parse(input) match {
-        case Right(t) => result += t
-        case Left(e) if (startPosition >= input.commitPosition) => {
-          input.position = startPosition
-          break
+      while(true) {
+        val startPosition = input.position
+        p.parse(input) match {
+          case Right(t) => result += t
+          case Left(e) if (startPosition >= input.commitPosition) => {
+            input.position = startPosition
+            break
+          }
+          case Left(e) => returning{ Left(e) }
         }
-        case Left(e) => returning{ Left(e) }
       }
     }
     Right(result.toIndexedSeq)

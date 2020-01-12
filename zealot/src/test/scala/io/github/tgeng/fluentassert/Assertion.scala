@@ -8,9 +8,9 @@ def [T] (subjects: Iterable[T]) shouldAll(assertion: Assertion[T]) = subjects.fo
 
 def equal[T](target: T) = Assertion[T] {(t, objective) =>
   if (objective && t != target) {
-    Some(s"to equal ${target.description}")
+    Some(s"to equal\n  ${target.description}")
   } else if (!objective && t == target) {
-    Some("to not equal ${target.description}")
+    Some("to not equal\n  ${target.description}")
   } else {
     None
   }
