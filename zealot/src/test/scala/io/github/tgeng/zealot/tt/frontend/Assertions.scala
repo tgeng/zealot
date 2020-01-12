@@ -7,7 +7,7 @@ import io.github.tgeng.zealot.tt.core.Binder
 import io.github.tgeng.zealot.tt.core.Context
 import io.github.tgeng.zealot.tt.core.Term
 
-def haveDeBruijnTerm(target: Term)(given ctx: DeBruijnContext) = Assertion[FTerm] { (ft, objective) =>
+def haveDeBruijnTerm(target: Term)(given ctx: DeBruijnContext) = AssertionBase[FTerm] { (ft, objective) =>
   ft.toTerm() match {
     case Right(t) => (objective, t == target) match {
       case (true, false) => Some(s"to translate to De Bruijn term\n  $target\nbut it translates to\n  $t")
@@ -18,7 +18,7 @@ def haveDeBruijnTerm(target: Term)(given ctx: DeBruijnContext) = Assertion[FTerm
   }
 }
 
-def haveFrontendTerm(target: FTerm)(given ctx: Context[Binder]) = Assertion[Term] { (t, objective) =>
+def haveFrontendTerm(target: FTerm)(given ctx: Context[Binder]) = AssertionBase[Term] { (t, objective) =>
   val ft = t.toFTerm()
   (ft == target, objective) match {
     case (false, true) => Some(s"to translate to frontend term\n  $target\nbut it translates to\n  $ft")
@@ -27,7 +27,7 @@ def haveFrontendTerm(target: FTerm)(given ctx: Context[Binder]) = Assertion[Term
   }
 }
 
-def remainTheSameTermAfterRoundTrip = Assertion[Term] {(t, objective) =>
+def remainTheSameTermAfterRoundTrip = AssertionBase[Term] {(t, objective) =>
   if (!objective) throw IllegalStateException("Wat? A term should always remain the same after round trip translatoin.")
   t.toFTerm()(given Context()).toTerm()(given DeBruijnContext()) match {
     case Right(translated) => t == translated match {
@@ -38,7 +38,7 @@ def remainTheSameTermAfterRoundTrip = Assertion[Term] {(t, objective) =>
   }
 }
 
-def remainTheSameFTermAfterRoundTrip = Assertion[FTerm] {(t, objective) =>
+def remainTheSameFTermAfterRoundTrip = AssertionBase[FTerm] {(t, objective) =>
   if (!objective) throw IllegalStateException("Wat? A term should always remain the same after round trip translatoin.")
   t.toTerm()(given DeBruijnContext()).map(_.toFTerm()(given Context())) match {
     case Right(translated) => t == translated match {

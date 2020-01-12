@@ -9,44 +9,66 @@ import io.github.tgeng.zealot.parsec.Strings.given
 class ParsecTest {
   @Test
   def `basic parsers` = {
-    pure(()).parse("") should succeedWith(())
-    pure(1).parse("") should succeedWith(1)
-    position.parse("") should succeedWith(0)
-    empty.parse("") should succeedWith(())
-    empty.parse("abc") should succeedWith(())
-    any.parse("abc") should succeedWith('a')
-    eof.parse("") should succeedWith(())
-    eof.parse("abc") should failWithMessage("0: <eof>")
-    skip.parse("abc") should succeedWith(())
-    skip.parse("") should failWithMessage("0: <skip>")
-    anyOf("abc").parse("ccc") should  succeedWith('c')
-    anyOf("abc").parse("d") should  failWithMessage("0: <anyOf{a, b, c}>")
+    testing(pure(())) {
+      "" succeedsWith(())
+    }
+    testing(pure((1))) {
+      "" succeedsWith 1
+    }
+    testing(position) {
+      "" succeedsWith 0
+    }
+    testing(empty) {
+      "" succeedsWith(())
+      "abc" succeedsWith(())
+    }
+    testing(any) {
+      "abc" succeedsWith 'a'
+      "" failsWithMessage "0: <any>"
+    }
+    testing(eof) {
+      "" succeedsWith(())
+      "abc" failsWithMessage "0: <eof>"
+    }
+    testing(skip) {
+      "abc" succeedsWith(())
+      "" failsWithMessage "0: <skip>"
+    }
 
-    val p1 : Parser[Char, Char] = 'c'
-    p1.parse("c") should succeedWith('c')
-    p1.parse("charge") should succeedWith('c')
-    p1.parse("abc") should failWithMessage("0: 'c'")
+    testing(anyOf("abc")) {
+      "ccc" succeedsWith 'c'
+      "" failsWithMessage "0: <anyOf{a, b, c}>"
+    }
 
-    val p2 : Parser[Char, String] = "abc"
-    p2.parse("abc") should succeedWith("abc")
-    p2.parse("abcdef") should succeedWith("abc")
-    p2.parse("def") should failWithMessage("""0: "abc"""")
+    testing('c') {
+      "c" succeedsWith 'c'
+      "change" succeedsWith 'c'
+      "abc" failsWithMessage "0: 'c'"
+    }
 
-    val p3 : Parser[Char, String] = "[0-9]+".r
-    p3.parse("123") should succeedWith("123")
-    p3.parse("123abc") should succeedWith("123")
-    p3.parse("abc") should failWithMessage("""0: /[0-9]+/""")
+    testing("abc") {
+      "abc" succeedsWith "abc"
+      "abcdef" succeedsWith "abc"
+      "def" failsWithMessage """0: "abc""""
+    }
+
+    testing("[0-9]+".r) {
+      "123" succeedsWith "123"
+      "123abc" succeedsWith "123"
+      "abc" failsWithMessage """0: /[0-9]+/"""
+    }
   }
 
   @Test
   def `or operator` = {
-    val abcd = "a" | "b" | "c" | "d"
-    abcd.parse("a") should succeedWith("a")
-    abcd.parse("b") should succeedWith("b")
-    abcd.parse("x") should failWithMessage("""
-      0: "d"
-      0: "a" | "b" | "c" | "d"
-    """)
+    testing("a" | "b" | "c" | "d") {
+      "a" succeedsWith "a"
+      "b" succeedsWith "b"
+      "x" failsWithMessage """
+        0: "d"
+        0: "a" | "b" | "c" | "d"
+      """
+    }
   }
 
   @Test
@@ -55,27 +77,29 @@ class ParsecTest {
     val hex = "0x" >> !"[0-9a-f]+".r withName "hex"
     val octOrHex = hex | oct | ".*".r
 
-    octOrHex.parse("0xaaf") should succeedWith("aaf")
-    octOrHex.parse("0123") should succeedWith("123")
-    octOrHex.parse("0abc") should failWithMessage("""
-      1: !/[0-7]+/
-      0: oct
-      0: hex | oct | /.*/
-    """)
+    testing(octOrHex) {
+      "0xaaf" succeedsWith "aaf"
+      "0123" succeedsWith "123"
+      "0abc" failsWithMessage """
+        1: !/[0-7]+/
+        0: oct
+        0: hex | oct | /.*/
+      """
+    }
   }
 
   @Test
   def `commit operator and *` = {
     val p = ":" >> !"\\w+".r
-    val ps = (p*)
-
-    ps.parse(":abc") should succeedWith(Seq("abc"))
-    ps.parse(":abc:def") should succeedWith(Seq("abc", "def"))
-    ps.parse(":abc:?") should failWithMessage("""
-      5: !/\w+/
-      4: ":" >> !/\w+/
-      0: (":" >> !/\w+/)*
-    """)
+    testing(p*) {
+      ":abc" succeedsWith Seq("abc" )
+      ":abc:def" succeedsWith Seq("abc", "def" )
+      ":abc:?" failsWithMessage """
+        5: !/\w+/
+        4: ":" >> !/\w+/
+        0: (":" >> !/\w+/)*
+      """
+    }
   }
 
   @Test
@@ -83,13 +107,15 @@ class ParsecTest {
     val alphabet = satisfy[Char](Character.isAlphabetic(_))
     val keyword = ("def" | "class" | "val") << not(!alphabet)
 
-    keyword.parse("def") should succeedWith("def")
-    keyword.parse("class") should succeedWith("class")
-    keyword.parse("val") should succeedWith("val")
-    keyword.parse("definition") should failWithMessage("""
-      3: not !<satisfy>
-      0: ("def" | "class" | "val") << not !<satisfy>
-    """)
+    testing(keyword) {
+      "def" succeedsWith "def"
+      "class" succeedsWith "class"
+      "val" succeedsWith "val"
+      "definition" failsWithMessage """
+        3: not !<satisfy>
+        0: ("def" | "class" | "val") << not !<satisfy>
+      """
+    }
   }
 
   @Test
@@ -99,110 +125,125 @@ class ParsecTest {
     val keyword = ("def" | "class" | "val") << not(!alphabet) withName "keyword"
     val identifier = "\\w+".r & not(keyword) & not(digit) // not starting with digit
 
-    identifier.parse("abc") should succeedWith("abc")
-    identifier.parse("definition") should succeedWith("definition")
-    identifier.parse("def") should failWithMessage("""
-      0: not keyword
-      0: /\w+/ & not keyword & not digit
-    """)
-    identifier.parse("123abc") should failWithMessage("""
-      0: not digit
-      0: /\w+/ & not keyword & not digit
-    """)
+    testing(identifier) {
+      "abc" succeedsWith "abc"
+      "definition" succeedsWith "definition"
+      "def" failsWithMessage """
+        0: not keyword
+        0: /\w+/ & not keyword & not digit
+      """
+      "123abc" failsWithMessage """
+        0: not digit
+        0: /\w+/ & not keyword & not digit
+      """
+    }
   }
 
   @Test
   def `suffix operators` = {
     val abc = parser("abc")
-    (abc*).parse("abcabcabd") should succeedWith(Seq("abc", "abc"))
-    (abc*).parse("def") should succeedWith(Seq())
-    (abc+).parse("abcabcabd") should succeedWith(Seq("abc", "abc"))
-    (abc+).parse("def") should failWithMessage("""
-      0: "abc"
-      0: "abc"+
-    """)
-    (abc?).parse("abcabcabd") should succeedWith(Some("abc"))
-    (abc?).parse("def") should succeedWith(None)
+    testing(abc*) {
+      "abcabcabd" succeedsWith Seq("abc", "abc" )
+      "def" succeedsWith Seq[String]()
+    }
+    testing(abc+) {
+      "abcabcabd" succeedsWith Seq("abc", "abc" )
+      "def" failsWithMessage """
+        0: "abc"
+        0: "abc"+
+      """
+    }
+    testing(abc?) {
+      "abcabcabd".succeedsWith[Char, Option[String]](Some("abc"))
+      "def".succeedsWith[Char, Option[String]](None)
+    }
   }
 
   @Test
   def `repeat operator` = {
-    val abc3 = 3 * "abc"
-    abc3.parse("abcabcabc") should succeedWith(Seq("abc", "abc", "abc"))
-    abc3.parse("abcabcabcabc") should succeedWith(Seq("abc", "abc", "abc"))
-    abc3.parse("abcabc") should failWithMessage("""
-      6: "abc"
-      0: 3 * "abc"
-    """)
+    testing(3 * "abc") {
+      "abcabcabc" succeedsWith Seq("abc", "abc", "abc" )
+      "abcabcabcabc" succeedsWith Seq("abc", "abc", "abc" )
+      "abcabc" failsWithMessage """
+        6: "abc"
+        0: 3 * "abc"
+      """
+    }
   }
 
   @Test
   def `sepBy operator` = {
     val word = "\\w+".r withName "word"
-    val oneOrMore = word sepBy1 ','
-    oneOrMore.parse("abc") should succeedWith(Seq("abc"))
-    oneOrMore.parse("abc,def") should succeedWith(Seq("abc", "def"))
-    oneOrMore.parse("!!") should failWithMessage("""
-      0: word
-      0: word sepBy1 ','
-    """)
-    val many = word sepBy ','
-    many.parse("abc") should succeedWith(Seq("abc"))
-    many.parse("abc,def") should succeedWith(Seq("abc", "def"))
-    many.parse("!!") should succeedWith(Seq())
-
-    val three = word.sepByN(3)(',')
-    three.parse("ab,cd,ef") should succeedWith(Seq("ab", "cd", "ef"))
-    three.parse("ab,cd,ef,gh") should succeedWith(Seq("ab", "cd", "ef"))
-    three.parse("ab,cd") should failWithMessage("""
-      5: ','
-      5: ',' >> word
-      2: 2 * (',' >> word)
-      0: word sepByN(3) ','
-    """)
+    testing(word sepBy1 ',') {
+      "abc" succeedsWith Seq("abc" )
+      "abc,def" succeedsWith Seq("abc", "def" )
+      "!!" failsWithMessage """
+        0: word
+        0: word sepBy1 ','
+      """
+    }
+    testing(word sepBy ',') {
+      "abc" succeedsWith Seq("abc" )
+      "abc,def" succeedsWith Seq("abc", "def" )
+      "!!" succeedsWith Seq[String]()
+    }
+    testing(word.sepByN(3)(',')) {
+      "ab,cd,ef" succeedsWith Seq("ab", "cd", "ef" )
+      "ab,cd,ef,gh" succeedsWith Seq("ab", "cd", "ef" )
+      "ab,cd" failsWithMessage """
+        5: ','
+        5: ',' >> word
+        2: 2 * (',' >> word)
+        0: word sepByN(3) ','
+      """
+    }
   }
 
   @Test
   def `prefix and suffix` = {
     val word = "\\w+".r withName "word"
-    val braced = '(' >> word << ')'
-    braced.parse("(abc)") should succeedWith("abc")
-    braced.parse("(abc)def") should succeedWith("abc")
-    braced.parse("()") should failWithMessage("""
+    testing('(' >> word << ')') {
+    "(abc)" succeedsWith "abc"
+    "(abc)def" succeedsWith "abc"
+    "()" failsWithMessage """
       1: word
       0: '(' >> word << ')'
-    """)
-    braced.parse("abc") should failWithMessage("""
+    """
+    "abc" failsWithMessage """
       0: '('
       0: '(' >> word << ')'
-    """)
+    """
+    }
   }
 
   @Test
   def `apply operator` = {
     val spaces = parser(' ')*
     val number = ("[0-9]+".r << spaces).map(_.toInt) withName "number"
-    val sum2 = pure((a: Int, b: Int) => a + b, "Sum2")(number, number)
-    sum2.parse("12 34") should succeedWith(46)
-    sum2.parse("12 ab") should failWithMessage("""
-      3: /[0-9]+/
-      3: number
-      0: Sum2(number, number)
-    """)
-    val sum3 = pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3")(number, number, number)
-    sum3.parse("12 34 56") should succeedWith(102)
-    sum3.parse("12 34") should failWithMessage("""
-      5: /[0-9]+/
-      5: number
-      0: Sum3(number, number, number)
-    """)
-    val sum4 = pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4")(number, number, number, number)
-    sum4.parse("12 34 56 78") should succeedWith(180)
-    sum4.parse("12 34 56 ") should failWithMessage("""
+    testing(pure((a: Int, b: Int) => a + b, "Sum2")(number, number)) {
+      "12 34" succeedsWith 46
+      "12 ab" failsWithMessage """
+        3: /[0-9]+/
+        3: number
+        0: Sum2(number, number)
+      """
+    }
+    testing(pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3")(number, number, number)) {
+      "12 34 56" succeedsWith 102
+      "12 34" failsWithMessage """
+        5: /[0-9]+/
+        5: number
+        0: Sum3(number, number, number)
+      """
+    }
+    testing(pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4")(number, number, number, number)) {
+    "12 34 56 78" succeedsWith 180
+    "12 34 56 " failsWithMessage """
       9: /[0-9]+/
       9: number
       0: Sum4(number, number, number, number)
-    """)
+    """
+    }
   }
 
   val realNumber : Parser[Char, Double] = for {
@@ -214,21 +255,65 @@ class ParsecTest {
   } yield sign * (beforePoint.toInt + afterPoint)
 
   @Test
-  def `parse real number` = {
-    realNumber.parse("2") should succeedWith(2.0)
-    realNumber.parse("-50") should succeedWith(-50.0)
-    realNumber.parse("-50.25") should succeedWith(-50.25)
-    realNumber.parse("30.5") should succeedWith(30.5)
-    realNumber.parse("123a") should succeedWith(123)
-    realNumber.parse("abc") should failWithMessage( """
+  def `parse real number` = testing(realNumber) {
+    "2" succeedsWith 2.0
+    "-50" succeedsWith -50.0
+    "-50.25" succeedsWith -50.25
+    "30.5" succeedsWith 30.5
+    "123a" succeedsWith 123.0
+    "abc" failsWithMessage  """
       0: /[0-9]+/
       0: '-'? /[0-9]+/ <?>
-    """)
-    realNumber.parse("4.") should failWithMessage( """
+    """
+    "4." failsWithMessage  """
       2: !/[0-9]+/
       1: '.' >> !/[0-9]+/
       1: ('.' >> !/[0-9]+/)?
       0: '-'? /[0-9]+/ ('.' >> !/[0-9]+/)?
-    """)
+    """
+  }
+
+  @Test
+  def `calculator` = {
+    val spaces = parser(' ')*
+    val plus = parser('+').map(_ => (a: Double, b: Double) => a + b)
+    val minus = parser('-').map(_ => (a: Double, b: Double) => a - b)
+    val multiply = parser('*').map(_ => (a: Double, b: Double) => a * b) withName "*"
+    val divide = parser('/').map(_ => (a: Double, b: Double) => a / b) withName "/"
+
+    def sumExpr: Parser[Char, Double] = (for {
+      first <- prodExpr
+      rest <- (for {
+        operator <- spaces >> (plus | minus) << spaces
+        operand <- prodExpr
+      } yield (operator, operand))*
+    } yield rest.foldLeft(first)((acc, pair) => pair._1(acc, pair._2))) withName "sumExpr"
+
+    def prodExpr: Parser[Char, Double] = (for {
+      first <- term
+      rest <- (for {
+        operator <- spaces >> (multiply | divide) << spaces
+        operand <- term
+      } yield (operator, operand))*
+    } yield rest.foldLeft(first)((acc, pair) => pair._1(acc, pair._2))) withName "prodExpr"
+
+    def term: Parser[Char, Double] =
+      realNumber |
+      "(" >> spaces >> sumExpr << spaces << ")" withName "term"
+
+    testing(sumExpr << eof) {
+      "1" succeedsWith 1.0
+      "1+2" succeedsWith 3.0
+      "1 + 2" succeedsWith 3.0
+      "1 - 2" succeedsWith -1.0
+      "1 * 2" succeedsWith 2.0
+      "1 / 2" succeedsWith 0.5
+      "1 + 2 * 3" succeedsWith 7.0
+      "1 * 2 + 3" succeedsWith 5.0
+      "1 * 2 + 3" succeedsWith 5.0
+      "2 * (3 + 4)" succeedsWith 14.0
+      "2 * ( 3 + 4 )" succeedsWith 14.0
+      "1 + 2 * 3 + (4 - 5) * 6" succeedsWith 1.0
+    }
   }
 }

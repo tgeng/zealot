@@ -5,7 +5,7 @@ import io.github.tgeng.zealot.tt.core.TypeCheckOps._
 import io.github.tgeng.zealot.tt.core.ErrorContext
 import io.github.tgeng.fluentassert._
 
-def haveWhnf(target: Term) = Assertion[Term]{ (t, objective) =>
+def haveWhnf(target: Term) = AssertionBase[Term]{ (t, objective) =>
   given errCtx : ErrorContext = Seq.empty
   val whnf = t.whnf.term
   if (objective && whnf != target) {
@@ -17,7 +17,7 @@ def haveWhnf(target: Term) = Assertion[Term]{ (t, objective) =>
   }
 }
 
-def checkWithType(ty: Term)(given ctx: TypeContext) = Assertion[Term] { (t, objective) =>
+def checkWithType(ty: Term)(given ctx: TypeContext) = AssertionBase[Term] { (t, objective) =>
   (t.checkType(ty), objective) match {
     case (Left(e), true) => Some(s"to check with type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Right(_), false) => Some(s"to not check with type\n $ty")
@@ -25,7 +25,7 @@ def checkWithType(ty: Term)(given ctx: TypeContext) = Assertion[Term] { (t, obje
   }
 }
 
-def haveInferredType(ty: Term)(given ctx: TypeContext) = Assertion[Term] { (t, objective) =>
+def haveInferredType(ty: Term)(given ctx: TypeContext) = AssertionBase[Term] { (t, objective) =>
   (t.inferType(), objective) match {
     case (Left(e), true) => Some(s"to have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Left(e), false) => Some(s"to not have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
