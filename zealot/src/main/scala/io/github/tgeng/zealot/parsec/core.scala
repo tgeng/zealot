@@ -174,3 +174,36 @@ def [I, T](p1: Parser[I, T]) | (p2: => Parser[I, T]) : Parser[I, T] = new Parser
     }
   }
 }
+
+private val andKind = Kind(2, "&")
+
+// '&' operator passes left result from left operand and ignores result from right operand.
+// However, if right operand parses fails, the overall '&' parser fails too. This operator
+// is useful to append other conditions to a given parser. For example, following parser
+// matches any words other than keywords.
+// ```
+//   "[a-z]+".r & not ("keyword1" | "keyword2")
+// ```
+def [I, T](p: Parser[I, T]) & (cond: => Parser[I, Any]): Parser[I, T] = new Parser[I, T](andKind) {
+  override def detailImpl = p.name(kind) + " & " + cond.name(kind)
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, T] = {
+    val startPosition = input.position
+    val startCommitPosition = input.commitPosition
+    p.parse(input) match {
+      case t@Right(_) => {
+        val finishPosition = input.position
+        val commitPosition = input.commitPosition
+        input.position = startPosition
+        input.commitPosition = startCommitPosition
+        val result = cond.parse(input) match {
+          case Right(_) => t
+          case Left(e) => Left(e)
+        }
+        input.position = finishPosition
+        input.commitPosition = commitPosition
+        result
+      }
+      case e@_ => e
+    }
+  }
+}

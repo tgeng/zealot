@@ -69,6 +69,39 @@ class ParsecTest {
     """)
   }
 
+  @Test
+  def `not operator` = {
+    val alphabet = satisfy[Char](Character.isAlphabetic(_))
+    val keyword = ("def" | "class" | "val") << not(!alphabet)
+
+    keyword.parse("def") should succeedWith("def")
+    keyword.parse("class") should succeedWith("class")
+    keyword.parse("val") should succeedWith("val")
+    keyword.parse("definition") should failWithMessage("""
+      3: not !<satisfy>
+      0: ("def" | "class" | "val") << not !<satisfy>
+    """)
+  }
+
+  @Test
+  def `and operator` = {
+    val alphabet = satisfy[Char](Character.isAlphabetic(_)) withName "alphabet"
+    val digit = satisfy[Char](Character.isDigit(_)) withName "digit"
+    val keyword = ("def" | "class" | "val") << not(!alphabet) withName "keyword"
+    val identifier = "\\w+".r & not(keyword) & not(digit) // not starting with digit
+
+    identifier.parse("abc") should succeedWith("abc")
+    identifier.parse("definition") should succeedWith("definition")
+    identifier.parse("def") should failWithMessage("""
+      0: not keyword
+      0: /\w+/ & not keyword & not digit
+    """)
+    identifier.parse("123abc") should failWithMessage("""
+      0: not digit
+      0: /\w+/ & not keyword & not digit
+    """)
+  }
+
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r
