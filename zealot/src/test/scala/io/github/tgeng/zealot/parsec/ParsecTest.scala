@@ -224,7 +224,7 @@ class ParsecTest {
       "12 ab" failsWithMessage """
         3: /[0-9]+/
         3: number
-        0: Sum2(number, number)
+        0: Sum2 $ (number, number)
       """
     }
     testing(pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3")(number, number, number)) {
@@ -232,7 +232,7 @@ class ParsecTest {
       "12 34" failsWithMessage """
         5: /[0-9]+/
         5: number
-        0: Sum3(number, number, number)
+        0: Sum3 $ (number, number, number)
       """
     }
     testing(pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4")(number, number, number, number)) {
@@ -240,7 +240,7 @@ class ParsecTest {
     "12 34 56 " failsWithMessage """
       9: /[0-9]+/
       9: number
-      0: Sum4(number, number, number, number)
+      0: Sum4 $ (number, number, number, number)
     """
     }
   }

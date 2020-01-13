@@ -141,7 +141,7 @@ def [I, F, T](fnP: Parser[I, F => T]) apply(
   fn <- fnP
   f <- fP
 } yield fn(f)) withDetailAndKind(
-  s"${fnP.name(applyKind)}(${fP.name()})",
+  s"${fnP.name(applyKind)} $$ (${fP.name()})",
   applyKind)
 
 def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
@@ -152,7 +152,7 @@ def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
   f1 <- f1P
   f2 <- f2P
 } yield fn(f1, f2)) withDetailAndKind (
-  s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()})",
+  s"${fnP.name(applyKind)} $$ (${f1P.name()}, ${f2P.name()})",
   applyKind)
 
 def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
@@ -165,7 +165,7 @@ def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
   f2 <- f2P
   f3 <- f3P
 } yield fn(f1, f2, f3)) withDetailAndKind (
-  s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()}, ${f3P.name()})",
+  s"${fnP.name(applyKind)} $$ (${f1P.name()}, ${f2P.name()}, ${f3P.name()})",
   applyKind)
 
 def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
@@ -180,7 +180,7 @@ def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
   f3 <- f3P
   f4 <- f4P
 } yield fn(f1, f2, f3, f4)) withDetailAndKind (
-  s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()}, ${f3P.name()}, ${f4P.name()})",
+  s"${fnP.name(applyKind)} $$ (${f1P.name()}, ${f2P.name()}, ${f3P.name()}, ${f4P.name()})",
   applyKind)
 
 val prependAppendConcat = Kind(7, "prependAppendConcat")

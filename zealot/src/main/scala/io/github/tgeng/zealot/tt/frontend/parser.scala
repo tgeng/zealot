@@ -34,16 +34,16 @@ private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
   '(' >> spaces >> (for {
     id <- identifier
     _ <- spaces >> ':' << spaces
-    ty <- ~subParser
+    ty <- subParser
   } yield (id, ty)) << spaces << ')' |
    subParser.map(t => ("", t))
 
 private def sigCross : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
-  (spaces >> "&" << spaces).map(_ => _ &: _)
+  (spaces >> ("&") << spaces).map(_ => _ &: _)
 
 private def product : FTermParser = foldRight(typeDecl(singleton), sigCross, singleton) withName "<product>"
 
 private def piArrow : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
-  (spaces >> "->" << spaces).map(_ => _ ->: _)
+  (spaces >> ("->") << spaces).map(_ => _ ->: _)
 
 def fTermParser: FTermParser =  foldRight(typeDecl(product), piArrow, product) withName "FTerm"

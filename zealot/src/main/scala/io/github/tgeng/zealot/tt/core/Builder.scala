@@ -3,7 +3,7 @@ package io.github.tgeng.zealot.tt.core
 import scala.language.implicitConversions
 
 object Builder {
-  def t(t: Term) = t
+  inline def t(t: Term) = t
 
   def (index: Int) unary_! : Term = Term.Ref(Reference.Idx(index))
 

@@ -2,7 +2,7 @@ package io.github.tgeng.zealot.parsec
 
 val rootKind = Kind(-1, "root")
 
-def parser[I, T](p: Parser[I, T]) = p
+inline def parser[I, T](p: Parser[I, T]) = p
 
 class ParserState[+I](val content: IndexedSeq[I], var position: Int, var commitPosition: Int)
 
@@ -100,24 +100,36 @@ def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = new Parse
 
 private val commitToKind = Kind(10, "~")
 
+def [I, T](p: Parser[I, T])~ = new Parser[I, T](commitToKind) {
+  override def detailImpl = p.name(kind) + "~"
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
+    p.parse(input) match {
+        case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
+        case t@_ => {
+          println("commit to position " + input.position)
+          input.commitPosition = input.position
+          t
+        }
+    }
+  }
+}
+
 def [I, T](p: Parser[I, T])unary_~ = new Parser[I, T](commitToKind) {
   override def detailImpl = "~" + p.name(kind)
-  override def parse(input: ParserState[I]) : Either[ParserError[I], T] = {
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
     input.commitPosition = input.position
     p.parse(input) match {
         case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
         case t@_ => t
     }
   }
-  override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
 }
 
 private def alternativeKind = AnyRef()
 
 val position = new Parser[Any, Int]() {
   override def detailImpl = "<pos>"
-  override def parse(input: ParserState[Any]) = Right(input.position)
-  override def parseImpl(input: ParserState[Any]) = throw UnsupportedOperationException()
+  override def parseImpl(input: ParserState[Any]) = Right(input.position)
 }
 
 def pure[I, T](t: T, aName : String = "<pure>") = new Parser[I, T]() {
