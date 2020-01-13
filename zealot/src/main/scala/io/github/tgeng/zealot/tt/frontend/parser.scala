@@ -26,7 +26,7 @@ private val reserved = setP | unitP
 
 private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<identifier>"
 
-private val reference : FTermParser = identifier.map(!_) withName "FRef"
+private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
 
 private val singleton = setP | unitP | starP | reference | '(' >> spaces >> fTermParser << spaces << ')' withName "<singleton>"
 

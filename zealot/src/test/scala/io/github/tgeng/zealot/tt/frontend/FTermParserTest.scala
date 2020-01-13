@@ -20,7 +20,7 @@ class FTermParserTest {
     "Unit -> Unit" succeedsWith (unit ->: unit)
     "Unit -> Unit & Unit" succeedsWith (unit ->: (unit &: unit))
     "Unit & Unit -> Unit" succeedsWith ((unit &: unit) ->: unit)
-    "(A: Set0) -> A" succeedsWith (("A", set(0)) ->: !"A")
-    "(A: Set0) & A" succeedsWith (("A", set(0)) &: !"A")
+    "(A: Set0) -> A" succeedsWith (("A", set(0)) ->: "A".ref)
+    "(A: Set0) & A" succeedsWith (("A", set(0)) &: "A".ref)
   }
 }

@@ -19,11 +19,11 @@ class FTermTest {
     import FBuilder.{given, _}
     ("A", set(0)) ->:
     ("B", set(0)) ->:
-    ("C", !"B" ->: set(0)) ->:
-    ("f", ("x", !"B") ->: (!"C")(!"x")) ->:
-    ("g", !"A" ->: !"B") ->:
-    ("x", !"A") ->:
-    (!"C")((!"g")(!"x"))
+    ("C", "B".ref ->: set(0)) ->:
+    ("f", ("x", "B".ref) ->: ("C".ref)("x".ref)) ->:
+    ("g", "A".ref ->: "B".ref) ->:
+    ("x", "A".ref) ->:
+    ("C".ref)(("g".ref)("x".ref))
   }
 
   val composeTy = {
@@ -33,15 +33,15 @@ class FTermTest {
     //B
       set(0) ->:
     //C: B -> Set
-      (!0 ->: set(0)) ->:
+      (0.ref ->: set(0)) ->:
     //f:(x:B -> C x)
-      (!1 ->: (!1)(!0)) ->:
+      (1.ref ->: (1.ref)(0.ref)) ->:
     //g:A -> B
-      (!3 ->: !3) ->:
+      (3.ref ->: 3.ref) ->:
     //x:A
-      !4 ->:
+      4.ref ->:
     //C(g x)
-      (!3)((!1)(!0))
+      (3.ref)((1.ref)(0.ref))
   }
 
   @Test
@@ -52,26 +52,26 @@ class FTermTest {
     ctx += ("g1", "g2")
 
     val g1 = FRef(FName("g1"))
-    g1 should haveDeBruijnTerm(!1)
+    g1 should haveDeBruijnTerm(1.ref)
     val g2 = FRef(FName("g2"))
-    g2 should haveDeBruijnTerm(!0)
+    g2 should haveDeBruijnTerm(0.ref)
 
     val x = FRef(FName("x"))
 
     FVal(FSet(1)) should haveDeBruijnTerm(set(1))
-    FVal(FPi("", g1, g2)) should haveDeBruijnTerm(!1 ->: !1)
-    FVal(FPi("x", g1, x)) should haveDeBruijnTerm(!1 ->: !0)
-    FVal(FLam("x", g1)) should haveDeBruijnTerm(lam(!2))
-    FVal(FLam("x", x)) should haveDeBruijnTerm(lam(!0))
-    FVal(FSig("", g1, g2)) should haveDeBruijnTerm(!1 &: !1)
-    FVal(FSig("x", g1, x)) should haveDeBruijnTerm(!1 &: !0)
-    FVal(FPair(g1, g2)) should haveDeBruijnTerm((!1, !0))
+    FVal(FPi("", g1, g2)) should haveDeBruijnTerm(1.ref ->: 1.ref)
+    FVal(FPi("x", g1, x)) should haveDeBruijnTerm(1.ref ->: 0.ref)
+    FVal(FLam("x", g1)) should haveDeBruijnTerm(lam(2.ref))
+    FVal(FLam("x", x)) should haveDeBruijnTerm(lam(0.ref))
+    FVal(FSig("", g1, g2)) should haveDeBruijnTerm(1.ref &: 1.ref)
+    FVal(FSig("x", g1, x)) should haveDeBruijnTerm(1.ref &: 0.ref)
+    FVal(FPair(g1, g2)) should haveDeBruijnTerm((1.ref, 0.ref))
     FVal(FUnit()) should haveDeBruijnTerm(unit)
     FVal(FStar()) should haveDeBruijnTerm(star)
 
-    FRdx(FApp(g1, g2)) should haveDeBruijnTerm((!1)(!0))
-    FRdx(FPrj1(g1)) should haveDeBruijnTerm(p1(!1))
-    FRdx(FPrj2(g1)) should haveDeBruijnTerm(p2(!1))
+    FRdx(FApp(g1, g2)) should haveDeBruijnTerm((1.ref)(0.ref))
+    FRdx(FPrj1(g1)) should haveDeBruijnTerm(p1(1.ref))
+    FRdx(FPrj2(g1)) should haveDeBruijnTerm(p2(1.ref))
   }
 
   @Test
@@ -95,34 +95,34 @@ class FTermTest {
 
     {
       import Builder.{given, _}
-      lam("x", !0)
+      lam("x", 0.ref)
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      \("x") =>: !"x"
+      \("x") =>: "x".ref
     }
 
     {
       import Builder.{given, _}
-      ("A", set(0)) ->: !0
+      ("A", set(0)) ->: 0.ref
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      ("A", set(0)) ->: !"A"
+      ("A", set(0)) ->: "A".ref
     }
 
     {
       import Builder.{given, _}
-      ("A", set(0)) &: !0
+      ("A", set(0)) &: 0.ref
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      ("A", set(0)) &: !"A"
+      ("A", set(0)) &: "A".ref
     }
 
     {
       import Builder.{given, _}
-      lam("x", (!0, !0))
+      lam("x", (0.ref, 0.ref))
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      \("x") =>: (!"x", !"x")
+      \("x") =>: ("x".ref, "x".ref)
     }
 
     {
@@ -143,26 +143,26 @@ class FTermTest {
 
     {
       import Builder.{given, _}
-      lam("x", (!0)(!0))
+      lam("x", (0.ref)(0.ref))
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      \("x") =>: (!"x")(!"x")
+      \("x") =>: ("x".ref)("x".ref)
     }
 
     {
       import Builder.{given, _}
-      lam("x", p1(!0))
+      lam("x", p1(0.ref))
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      \("x") =>: p1(!"x")
+      \("x") =>: p1("x".ref)
     }
 
     {
       import Builder.{given, _}
-      lam("x", p2(!0))
+      lam("x", p2(0.ref))
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      \("x") =>: p2(!"x")
+      \("x") =>: p2("x".ref)
     }
   }
 
@@ -170,12 +170,12 @@ class FTermTest {
   def `Term - round trip translation` = {
     import Builder.{given, _}
     Iterable(
-      lam(!0),
-      lam(lam((!0)(!1))),
+      lam(0.ref),
+      lam(lam((0.ref)(1.ref))),
       lam(star),
-      lam((lam(!1) &: lam(!0))),
-      lam((lam(!1) &: lam(!1))),
-      lam((lam(!1) &: lam(!2))),
+      lam((lam(1.ref) &: lam(0.ref))),
+      lam((lam(1.ref) &: lam(1.ref))),
+      lam((lam(1.ref) &: lam(2.ref))),
       composeTy,
     ) shouldAll remainTheSameTermAfterRoundTrip
   }
@@ -184,10 +184,10 @@ class FTermTest {
   def `FTerm - round trip translation` = {
     import FBuilder.{given, _}
     Iterable(
-      \("x") =>: !"x",
-      \("x", "x") =>: (!"x")(!"x"),
-      \("x", "y") =>: (!"x")(!"y"),
-      \("x") =>: (!"x")(\("x") =>: !"x"),
+      \("x") =>: "x".ref,
+      \("x", "x") =>: ("x".ref)("x".ref),
+      \("x", "y") =>: ("x".ref)("y".ref),
+      \("x") =>: ("x".ref)(\("x") =>: "x".ref),
       \("") =>: star,
       fComposeTy,
     ) shouldAll remainTheSameFTermAfterRoundTrip

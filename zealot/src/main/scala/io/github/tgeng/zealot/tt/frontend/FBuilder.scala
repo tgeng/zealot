@@ -10,7 +10,7 @@ import scala.language.implicitConversions
 object FBuilder {
   def ft(ft: FTerm) = ft
 
-  def (name: String) unary_! = FRef(FName(name))
+  def (name: String) ref = FRef(FName(name))
 
   def set(level: Int) = FVal(FSet(level))
 

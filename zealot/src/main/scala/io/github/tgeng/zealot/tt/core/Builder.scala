@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 object Builder {
   inline def t(t: Term) = t
 
-  def (index: Int) unary_! : Term = Term.Ref(Reference.Idx(index))
+  def (index: Int) ref : Term = Term.Ref(Reference.Idx(index))
 
   // Careful! You should not use this unless you are writing tests.
   def (index: Int) nref : Term = Term.Ref(Reference.Num(index))

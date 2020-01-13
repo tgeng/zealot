@@ -17,7 +17,7 @@ def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationErr
   import scala.language.implicitConversions
   ft match {
     case FRef(FName(name)) => ctx(name) match {
-      case Some(idx) => !idx
+      case Some(idx) => idx.ref
       case None => DeBruijnizationError(s"$name is not present in context\n  ${ctx.toString().indented(2)}", ft)
     }
     case FVal(v) => v match {

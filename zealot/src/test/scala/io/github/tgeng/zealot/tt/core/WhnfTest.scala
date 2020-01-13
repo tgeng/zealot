@@ -12,47 +12,47 @@ class WhnfTest {
     star ~~> star
     unit ~~> unit
     set(1) ~~> set(1)
-    (!0 ->: !1) ~~> (!0 ->: !1)
-    lam(!4) ~~> lam(!4)
-    (!0 &: !3) ~~> (!0 &: !3)
-    (!1, !2) ~~> (!1, !2)
+    (0.ref ->: 1.ref) ~~> (0.ref ->: 1.ref)
+    lam(4.ref) ~~> lam(4.ref)
+    (0.ref &: 3.ref) ~~> (0.ref &: 3.ref)
+    (1.ref, 2.ref) ~~> (1.ref, 2.ref)
   }
 
   @Test
   def `apply lambda` = {
-    lam(!0)(star) ~~> star
-    lam(!0)(!100) ~~> !100
-    lam(lam((!1 , !0)))(!100)(!200) ~~> (!100, !200)
-    lam(lam((!0 , !1)))(!100)(!200) ~~> (!200, !100)
-    lam(!100)(!0) ~~> !99
-    lam(!0 ->: !1)(!100) ~~> (!100 ->: !101)
-    lam(!0 ->: !0)(!100) ~~> (!100 ->: !0)
-    lam(!0 &: !1)(!100) ~~> (!100 &: !101)
-    lam(!0 &: !0)(!100) ~~> (!100 &: !0)
+    lam(0.ref)(star) ~~> star
+    lam(0.ref)(100.ref) ~~> 100.ref
+    lam(lam((1.ref , 0.ref)))(100.ref)(200.ref) ~~> (100.ref, 200.ref)
+    lam(lam((0.ref , 1.ref)))(100.ref)(200.ref) ~~> (200.ref, 100.ref)
+    lam(100.ref)(0.ref) ~~> 99.ref
+    lam(0.ref ->: 1.ref)(100.ref) ~~> (100.ref ->: 101.ref)
+    lam(0.ref ->: 0.ref)(100.ref) ~~> (100.ref ->: 0.ref)
+    lam(0.ref &: 1.ref)(100.ref) ~~> (100.ref &: 101.ref)
+    lam(0.ref &: 0.ref)(100.ref) ~~> (100.ref &: 0.ref)
   }
 
   @Test
   def `pair projection` = {
-    p1((!1, !2)) ~~> !1
-    p2((!1, !2)) ~~> !2
-    p1((lam(!100), !4 &: !5)) ~~> lam(!100)
-    p2((lam(!100), !4 &: !5)) ~~> (!4 &: !5)
+    p1((1.ref, 2.ref)) ~~> 1.ref
+    p2((1.ref, 2.ref)) ~~> 2.ref
+    p1((lam(100.ref), 4.ref &: 5.ref)) ~~> lam(100.ref)
+    p2((lam(100.ref), 4.ref &: 5.ref)) ~~> (4.ref &: 5.ref)
   }
 
   @Test
   def `does not reduce under head` = {
-    (p1((!1, !2)) ->: !4) ~~> (p1((!1, !2)) ->: !4)
-    (p1((!1, !2)) &: !4) ~~> (p1((!1, !2)) &: !4)
-    lam(p1((!1, !2))) ~~> lam(p1((!1, !2)))
-    t((p1((!1, !2)), !1)) ~~> t((p1((!1, !2)), !1))
-    (!100)(p1((!1, !2))) ~~> (!100)(p1((!1, !2)))
+    (p1((1.ref, 2.ref)) ->: 4.ref) ~~> (p1((1.ref, 2.ref)) ->: 4.ref)
+    (p1((1.ref, 2.ref)) &: 4.ref) ~~> (p1((1.ref, 2.ref)) &: 4.ref)
+    lam(p1((1.ref, 2.ref))) ~~> lam(p1((1.ref, 2.ref)))
+    t((p1((1.ref, 2.ref)), 1.ref)) ~~> t((p1((1.ref, 2.ref)), 1.ref))
+    (100.ref)(p1((1.ref, 2.ref))) ~~> (100.ref)(p1((1.ref, 2.ref)))
   }
 
   @Test
   def `more convoluted cases` = {
-    val apply = lam(lam((!1)(!0)))
-    val extractFirst = lam(p1(!0))
-    val pair = t(!100, !200)
-    apply(extractFirst)(pair) ~~> !100
+    val apply = lam(lam((1.ref)(0.ref)))
+    val extractFirst = lam(p1(0.ref))
+    val pair = t(100.ref, 200.ref)
+    apply(extractFirst)(pair) ~~> 100.ref
   }
 }

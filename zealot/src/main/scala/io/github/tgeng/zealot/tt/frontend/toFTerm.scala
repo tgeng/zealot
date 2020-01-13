@@ -70,7 +70,7 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
   import FBuilder.{given, _}
   import scala.language.implicitConversions
   t match {
-    case Ref(r) => !ctx(r)
+    case Ref(r) => ctx(r).map(_.ref)
       .orThrow(IllegalArgumentException(s"Reference $r is invalid in context\n$ctx"))
     case Val(v) => v match {
       case Set(l) => set(l)

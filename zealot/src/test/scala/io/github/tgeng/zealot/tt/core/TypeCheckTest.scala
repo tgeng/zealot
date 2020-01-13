@@ -14,7 +14,7 @@ class TypeCheckTest {
   def `basic type check` = {
     star :< unit
     (star, star) :< (unit &: unit)
-    (unit, star) :< (set(0) &: !0)
+    (unit, star) :< (set(0) &: 0.ref)
     lam(star) :< (unit ->: unit)
     set(1) :< set(2)
     set(0) :< set(2)
@@ -48,75 +48,75 @@ class TypeCheckTest {
 
   @Test
   def `more type check` = {
-    lam(p1(!0)) :< ((set(0) &: !0) ->: set(0))
-    lam(p2(!0)) :< ((set(0) &: !0) ->: p1(!0))
+    lam(p1(0.ref)) :< ((set(0) &: 0.ref) ->: set(0))
+    lam(p2(0.ref)) :< ((set(0) &: 0.ref) ->: p1(0.ref))
 
     given ctx: TypeContext = context(set(0), set(0), set(0))
 
     0.nref :> set(0)
-    !2 :> set(0)
+    2.ref :> set(0)
     1.nref :> set(0)
-    !1 :> set(0)
+    1.ref :> set(0)
     2.nref :> set(0)
-    !0 :> set(0)
+    0.ref :> set(0)
 
     (0.nref ->: 1.nref) :> set(0)
-    (!2 ->: !2) :> set(0)
+    (2.ref ->: 2.ref) :> set(0)
     (0.nref &: 1.nref) :> set(0)
-    (!2 &: !2) :> set(0)
+    (2.ref &: 2.ref) :> set(0)
 
     // 3 : 0
     ctx += 0.nref
 
     3.nref :> 0.nref
-    !0 :> 0.nref
+    0.ref :> 0.nref
     (3.nref, 3.nref) :< (0.nref &: 0.nref)
-    (!0, !0) :< (0.nref &: 0.nref)
+    (0.ref, 0.ref) :< (0.nref &: 0.nref)
     lam(3.nref) :< (0.nref ->: 0.nref)
-    lam(!1) :< (0.nref ->: 0.nref)
+    lam(1.ref) :< (0.nref ->: 0.nref)
     lam(3.nref) :< (1.nref ->: 0.nref)
-    lam(!1) :< (1.nref ->: 0.nref)
+    lam(1.ref) :< (1.nref ->: 0.nref)
 
     // 4 : 0 -> 1
     ctx += 0.nref ->: 1.nref
 
     4.nref(3.nref) :> 1.nref
-    (!0)(!1) :> 1.nref
+    (0.ref)(1.ref) :> 1.nref
 
     // 5 : 0 &: 1
     ctx += 0.nref &: 1.nref
 
     p1(5.nref) :> 0.nref
-    p1(!0) :> 0.nref
+    p1(0.ref) :> 0.nref
     p2(5.nref) :> 1.nref
-    p2(!0) :> 1.nref
+    p2(0.ref) :> 1.nref
   }
 
   @Test
   def `more lambda type check` = {
-    lam(!0) :< (set(0) ->: set(0))
+    lam(0.ref) :< (set(0) ->: set(0))
 
     // standard id function
-    lam(lam(!0)) :< (set(0) ->: !0 ->: !1)
+    lam(lam(0.ref)) :< (set(0) ->: 0.ref ->: 1.ref)
 
     // (simple) compose function
     //            A   B   C   f   g   &:  . f   (g   x)
-    val compose = lam(lam(lam(lam(lam(lam((!2)((!1)(!0))))))))
+    val compose = lam(lam(lam(lam(lam(lam((2.ref)((1.ref)(0.ref))))))))
     val composeTy =
     //A
       set(0) ->:
     //B
       set(0) ->:
     //C: B -> Set
-      (!0 ->: set(0)) ->:
+      (0.ref ->: set(0)) ->:
     //f:(x:B -> C x)
-      (!1 ->: (!1)(!0)) ->:
+      (1.ref ->: (1.ref)(0.ref)) ->:
     //g:A -> B
-      (!3 ->: !3) ->:
+      (3.ref ->: 3.ref) ->:
     //x:A
-      !4 ->:
+      4.ref ->:
     //C(g x)
-      (!3)((!1)(!0))
+      (3.ref)((1.ref)(0.ref))
     compose :< composeTy
   }
 }
