@@ -98,10 +98,10 @@ def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = new Parse
   override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
 }
 
-private val commitToKind = Kind(5, "!")
+private val commitToKind = Kind(5, "~")
 
-def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](commitToKind) {
-  override def detailImpl = "!" + p.name(kind)
+def [I, T](p: Parser[I, T])unary_~ = new Parser[I, T](commitToKind) {
+  override def detailImpl = "~" + p.name(kind)
   override def parse(input: ParserState[I]) : Either[ParserError[I], T] = {
     input.commitPosition = input.position
     p.parse(input) match {

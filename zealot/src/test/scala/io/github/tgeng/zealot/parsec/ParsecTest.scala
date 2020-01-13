@@ -72,15 +72,15 @@ class ParsecTest {
 
   @Test
   def `commit operator and |` = {
-    val oct = "0" >> !"[0-7]+".r withName "oct"
-    val hex = "0x" >> !"[0-9a-f]+".r withName "hex"
+    val oct = "0" >> ~"[0-7]+".r withName "oct"
+    val hex = "0x" >> ~"[0-9a-f]+".r withName "hex"
     val octOrHex = hex | oct | ".*".r
 
     testing(octOrHex) {
       "0xaaf" succeedsWith "aaf"
       "0123" succeedsWith "123"
       "0abc" failsWithMessage """
-        1: !/[0-7]+/
+        1: ~/[0-7]+/
         0: oct
         0: hex | oct | /.*/
       """
@@ -89,14 +89,14 @@ class ParsecTest {
 
   @Test
   def `commit operator and *` = {
-    val p = ":" >> !"\\w+".r
+    val p = ":" >> ~"\\w+".r
     testing(p*) {
       ":abc" succeedsWith Seq("abc" )
       ":abc:def" succeedsWith Seq("abc", "def" )
       ":abc:?" failsWithMessage """
-        5: !/\w+/
-        4: ":" >> !/\w+/
-        0: (":" >> !/\w+/)*
+        5: ~/\w+/
+        4: ":" >> ~/\w+/
+        0: (":" >> ~/\w+/)*
       """
     }
   }
@@ -104,15 +104,15 @@ class ParsecTest {
   @Test
   def `not operator` = {
     val alphabet = satisfy[Char](Character.isAlphabetic(_))
-    val keyword = ("def" | "class" | "val") << not(!alphabet)
+    val keyword = ("def" | "class" | "val") << not(~alphabet)
 
     testing(keyword) {
       "def" succeedsWith "def"
       "class" succeedsWith "class"
       "val" succeedsWith "val"
       "definition" failsWithMessage """
-        3: not !<satisfy>
-        0: ("def" | "class" | "val") << not !<satisfy>
+        3: not ~<satisfy>
+        0: ("def" | "class" | "val") << not ~<satisfy>
       """
     }
   }
@@ -121,7 +121,7 @@ class ParsecTest {
   def `and operator` = {
     val alphabet = satisfy[Char](Character.isAlphabetic(_)) withName "alphabet"
     val digit = satisfy[Char](Character.isDigit(_)) withName "digit"
-    val keyword = ("def" | "class" | "val") << not(!alphabet) withName "keyword"
+    val keyword = ("def" | "class" | "val") << not(~alphabet) withName "keyword"
     val identifier = "\\w+".r & not(keyword) & not(digit) // not starting with digit
 
     testing(identifier) {
@@ -176,7 +176,7 @@ class ParsecTest {
     testing(word sepBy1 ',') {
       "abc" succeedsWith Seq("abc" )
       "abc,def" succeedsWith Seq("abc", "def" )
-      "!!" failsWithMessage """
+      "~~" failsWithMessage """
         0: word
         0: word sepBy1 ','
       """
@@ -184,7 +184,7 @@ class ParsecTest {
     testing(word sepBy ',') {
       "abc" succeedsWith Seq("abc" )
       "abc,def" succeedsWith Seq("abc", "def" )
-      "!!" succeedsWith Seq[String]()
+      "~~" succeedsWith Seq[String]()
     }
     testing(word.sepByN(3)(',')) {
       "ab,cd,ef" succeedsWith Seq("ab", "cd", "ef" )
@@ -259,7 +259,7 @@ class ParsecTest {
   val realNumber : Parser[Char, Double] = for {
     sign <- ('-'?).map(_.map(_ => -1).getOrElse(1))
     beforePoint <- "[0-9]+".r
-    afterPoint <- (('.' >> !"[0-9]+".r)?)
+    afterPoint <- (('.' >> ~"[0-9]+".r)?)
       .map(_.map(s => s.toInt / math.pow(10.0, s.size))
             .getOrElse(0.0))
   } yield sign * (beforePoint.toInt + afterPoint)
@@ -313,10 +313,10 @@ class ParsecTest {
       0: '-'? /[0-9]+/ <?>
     """
     "4." failsWithMessage  """
-      2: !/[0-9]+/
-      1: '.' >> !/[0-9]+/
-      1: ('.' >> !/[0-9]+/)?
-      0: '-'? /[0-9]+/ ('.' >> !/[0-9]+/)?
+      2: ~/[0-9]+/
+      1: '.' >> ~/[0-9]+/
+      1: ('.' >> ~/[0-9]+/)?
+      0: '-'? /[0-9]+/ ('.' >> ~/[0-9]+/)?
     """
   }
 
