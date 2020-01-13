@@ -12,10 +12,10 @@ class TypeCheckTest {
 
   @Test
   def `basic type check` = {
-    (*) :< unit
-    (*, *) :< (unit x unit)
-    (unit, *) :< (set(0) x !0)
-    lam(*) :< (unit ->: unit)
+    star :< unit
+    (star, star) :< (unit x unit)
+    (unit, star) :< (set(0) x !0)
+    lam(star) :< (unit ->: unit)
     set(1) :< set(2)
     set(0) :< set(2)
     (unit ->: unit) :< set(0)
@@ -28,14 +28,14 @@ class TypeCheckTest {
 
     set(1) shouldNot checkWithType(set(0))
     set(1) shouldNot checkWithType(set(1))
-    (*) shouldNot checkWithType(*)
+    (star) shouldNot checkWithType(star)
     (set(1) ->: set(2)) shouldNot checkWithType(set(2))
-    lam(*) shouldNot checkWithType(* ->: unit)
+    lam(star) shouldNot checkWithType(star ->: unit)
   }
 
   @Test
   def `basic type infer` = {
-    (*) :> unit
+    (star) :> unit
     set(0) :> set(1)
     set(1) :> set(2)
     (unit ->: unit) :> set(0)

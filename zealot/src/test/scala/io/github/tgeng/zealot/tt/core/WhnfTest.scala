@@ -9,7 +9,7 @@ import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 class WhnfTest {
   @Test
   def `value should remain as value` = {
-    * ~~> *
+    star ~~> star
     unit ~~> unit
     set(1) ~~> set(1)
     (!0 ->: !1) ~~> (!0 ->: !1)
@@ -20,7 +20,7 @@ class WhnfTest {
 
   @Test
   def `apply lambda` = {
-    lam(!0)(*) ~~> *
+    lam(!0)(star) ~~> star
     lam(!0)(!100) ~~> !100
     lam(lam((!1 , !0)))(!100)(!200) ~~> (!100, !200)
     lam(lam((!0 , !1)))(!100)(!200) ~~> (!200, !100)

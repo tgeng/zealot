@@ -30,7 +30,7 @@ object Builder {
 
   def unit = Term.Val(Value.Unit)
 
-  def * = Term.Val(Value.Star)
+  def star = Term.Val(Value.Star)
 
   given unnamedArg : Conversion[Term, (String, Term)] = ft => ("", ft)
 }

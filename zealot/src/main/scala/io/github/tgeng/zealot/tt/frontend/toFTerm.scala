@@ -93,7 +93,7 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
       }
       case Pair(a, b) => (a.toFTermDirectly(), b.toFTermDirectly())
       case Unit => unit
-      case Star => *
+      case Star => star
     }
     case Rdx(r) => r match {
       case App(fn, arg) => (fn.toFTermDirectly())(arg.toFTermDirectly())

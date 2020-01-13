@@ -44,7 +44,7 @@ def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationErr
         snd <- fSnd.toTerm()
       } yield (fst, snd)
       case FUnit() => unit
-      case FStar() => *
+      case FStar() => star
     }
     case FRdx(r) => r match {
       case FApp(fFn, fArg) => for {

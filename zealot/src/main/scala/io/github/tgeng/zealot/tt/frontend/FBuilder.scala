@@ -34,7 +34,7 @@ object FBuilder {
 
   def unit = FVal(FUnit())
 
-  def * = FVal(FStar())
+  def star = FVal(FStar())
 
   given unnamedArg : Conversion[FTerm, (String, FTerm)] = ft => ("", ft)
 }
