@@ -106,11 +106,20 @@ def [I, T](p: Parser[I, T])! = new Parser[I, T](commitToKind) {
     p.parse(input) match {
         case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
         case t@_ => {
-          println("commit to position " + input.position)
           input.commitPosition = input.position
           t
         }
     }
+  }
+}
+
+def scoped[I, T](p: Parser[I, T]) = new Parser[I, T](p.kind) {
+  override def detailImpl = s"{ ${p.name()} }"
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
+    val commitPosition = input.commitPosition
+    val result = p.parse(input);
+    input.commitPosition = commitPosition
+    result
   }
 }
 

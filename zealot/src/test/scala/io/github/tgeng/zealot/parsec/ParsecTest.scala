@@ -323,10 +323,10 @@ class ParsecTest {
   @Test
   def `calculator` = {
     val spaces = parser(' ')*
-    val plus = parser('+').map(_ => (a: Double, b: Double) => a + b)
-    val minus = parser('-').map(_ => (a: Double, b: Double) => a - b)
-    val multiply = parser('*').map(_ => (a: Double, b: Double) => a * b) withName "*"
-    val divide = parser('/').map(_ => (a: Double, b: Double) => a / b) withName "/"
+    val plus = parser('+'!).map(_ => (a: Double, b: Double) => a + b) withName "+"
+    val minus = parser('-'!).map(_ => (a: Double, b: Double) => a - b) withName "-"
+    val multiply = parser('*'!).map(_ => (a: Double, b: Double) => a * b) withName "*"
+    val divide = parser('/'!).map(_ => (a: Double, b: Double) => a / b) withName "/"
 
     def sumExpr: Parser[Char, Double] =
       prodExpr.chainedLeftBy(spaces >> (plus | minus) << spaces) withName "sumExpr"
