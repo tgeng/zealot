@@ -265,6 +265,43 @@ class ParsecTest {
   } yield sign * (beforePoint.toInt + afterPoint)
 
   @Test
+  def `prepend append concat` = {
+    val a = parser('a')
+    val b = parser('b')
+    val c = parser('c')
+
+    testing(a + b) {
+      "abc".succeedsWith[Char, IndexedSeq[Char]]("ab")
+      "a" failsWithMessage """
+         1: 'b'
+         0: 'a' + 'b'
+      """
+    }
+    val ab = parser(a + b)
+    testing(c +: ab) {
+      "cab".succeedsWith[Char, IndexedSeq[Char]]("cab")
+      "ab" failsWithMessage """
+        0: 'c'
+        0: 'c' +: 'a' + 'b'
+      """
+    }
+    testing(ab :+ c) {
+      "abc".succeedsWith[Char, IndexedSeq[Char]]("abc")
+      "abd" failsWithMessage """
+        2: 'c'
+        0: 'a' + 'b' :+ 'c'
+      """
+    }
+    testing(ab ++ ab) {
+      "abab".succeedsWith[Char, IndexedSeq[Char]]("abab")
+      "abc" failsWithMessage """
+        2: 'a'
+        0: 'a' + 'b' ++ 'a' + 'b'
+      """
+    }
+  }
+
+  @Test
   def `parse real number` = testing(realNumber) {
     "2" succeedsWith 2.0
     "-50" succeedsWith -50.0

@@ -61,10 +61,8 @@ def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatK
 
 val sepKind = Kind(0, "sep")
 
-def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = (for {
-  first <- p
-  rest <- (s >> p)*
-} yield first +: rest) withDetailAndKind (
+def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
+  p +: ((s >> p)*) withDetailAndKind (
   s"${p.name(sepKind)} sepBy1 ${s.name(sepKind)}",
   sepKind)
 
@@ -77,10 +75,7 @@ def [I, T](p: Parser[I, T]) sepByN (count: Int) (s: Parser[I, ?]) : Parser[I, In
   count match {
     case 0 => empty.map{_ => IndexedSeq.empty[T]}
     case 1 => p.map(IndexedSeq[T](_))
-    case n => for {
-      first <- p
-      rest <- (n - 1) * (s >> p)
-    } yield first +: rest
+    case n => p +: (n - 1) * (s >> p)
   }
 } withDetailAndKind (
   s"${p.name(sepKind)} sepByN($count) ${s.name(sepKind)}",
@@ -173,3 +168,33 @@ def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
 } yield fn(f1, f2, f3, f4)) withDetailAndKind (
   s"${fnP.name(applyKind)}(${f1P.name()}, ${f2P.name()}, ${f3P.name()}, ${f4P.name()})",
   applyKind)
+
+val prependAppendConcat = Kind(7, "prependAppendConcat")
+
+def [I, T](p1: Parser[I, T]) + (p2: Parser[I, T]) : Parser[I, IndexedSeq[T]] = (for {
+  t1 <- p1
+  t2 <- p2
+} yield IndexedSeq(t1, t2)).withDetailAndKind(
+  s"${p1.name(prependAppendConcat)} + ${p2.name(prependAppendConcat)}",
+  prependAppendConcat)
+
+def [I, T, S <: IndexedSeq[T]](p1: Parser[I, T]) +: (p2: Parser[I, IndexedSeq[T]]) : Parser[I, IndexedSeq[T]] = (for {
+  t <- p1
+  ts <- p2
+} yield t +: ts).withDetailAndKind(
+  s"${p1.name(prependAppendConcat)} +: ${p2.name(prependAppendConcat)}",
+  prependAppendConcat)
+
+def [I, T](p1: Parser[I, IndexedSeq[T]]) :+ (p2: Parser[I, T]) : Parser[I, IndexedSeq[T]] = (for {
+  ts <- p1
+  t <- p2
+} yield ts :+ t).withDetailAndKind(
+  s"${p1.name(prependAppendConcat)} :+ ${p2.name(prependAppendConcat)}",
+  prependAppendConcat)
+
+def [I, T](p1: Parser[I, IndexedSeq[T]]) ++ (p2: Parser[I, IndexedSeq[T]]) : Parser[I, IndexedSeq[T]] = (for {
+  ts1 <- p1
+  ts2 <- p2
+} yield ts1 ++ ts2).withDetailAndKind(
+  s"${p1.name(prependAppendConcat)} ++ ${p2.name(prependAppendConcat)}",
+  prependAppendConcat)
