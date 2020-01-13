@@ -19,7 +19,7 @@ object Builder {
 
   def (a: Term) apply (b: Term) = Term.Rdx(Redux.App(a, b))
 
-  def (a: (String, Term)) x (b: Term) = Term.Val(Value.Sig(a._2, b)(Binder(a._1)))
+  def (a: (String, Term)) &: (b: Term) = Term.Val(Value.Sig(a._2, b)(Binder(a._1)))
 
   given tupleToPairConditional[A, B](given ac: A => Term)(given bc: B => Term) : Conversion[(A, B), Term] = (a, b) => Term.Val(Value.Pair(ac(a), bc(b)))
   given tupleToPair : Conversion[(Term, Term), Term] = (a, b) => Term.Val(Value.Pair(a, b))

@@ -38,7 +38,7 @@ def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationErr
         sndTy <- (name :: ctx) {
           fSndTy.toTerm()
         }
-      } yield (name, fstTy) x sndTy
+      } yield (name, fstTy) &: sndTy
       case FPair(fFst, fSnd) => for {
         fst <- fFst.toTerm()
         snd <- fSnd.toTerm()

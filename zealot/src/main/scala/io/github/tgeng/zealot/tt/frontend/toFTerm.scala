@@ -89,7 +89,7 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
         val fB = (v.binder.name :: ctx) {
           b.toFTermDirectly()
         }
-        (v.binder.name, fA) x fB
+        (v.binder.name, fA) &: fB
       }
       case Pair(a, b) => (a.toFTermDirectly(), b.toFTermDirectly())
       case Unit => unit

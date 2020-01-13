@@ -63,8 +63,8 @@ class FTermTest {
     FVal(FPi("x", g1, x)) should haveDeBruijnTerm(!1 ->: !0)
     FVal(FLam("x", g1)) should haveDeBruijnTerm(lam(!2))
     FVal(FLam("x", x)) should haveDeBruijnTerm(lam(!0))
-    FVal(FSig("", g1, g2)) should haveDeBruijnTerm(!1 x !1)
-    FVal(FSig("x", g1, x)) should haveDeBruijnTerm(!1 x !0)
+    FVal(FSig("", g1, g2)) should haveDeBruijnTerm(!1 &: !1)
+    FVal(FSig("x", g1, x)) should haveDeBruijnTerm(!1 &: !0)
     FVal(FPair(g1, g2)) should haveDeBruijnTerm((!1, !0))
     FVal(FUnit()) should haveDeBruijnTerm(unit)
     FVal(FStar()) should haveDeBruijnTerm(star)
@@ -111,10 +111,10 @@ class FTermTest {
 
     {
       import Builder.{given, _}
-      ("A", set(0)) x !0
+      ("A", set(0)) &: !0
     } should haveFrontendTerm {
       import FBuilder.{given, _}
-      ("A", set(0)) x !"A"
+      ("A", set(0)) &: !"A"
     }
 
     {
@@ -173,9 +173,9 @@ class FTermTest {
       lam(!0),
       lam(lam((!0)(!1))),
       lam(star),
-      lam((lam(!1) x lam(!0))),
-      lam((lam(!1) x lam(!1))),
-      lam((lam(!1) x lam(!2))),
+      lam((lam(!1) &: lam(!0))),
+      lam((lam(!1) &: lam(!1))),
+      lam((lam(!1) &: lam(!2))),
       composeTy,
     ) shouldAll remainTheSameTermAfterRoundTrip
   }

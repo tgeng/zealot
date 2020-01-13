@@ -22,7 +22,7 @@ object FBuilder {
 
   def (a: FTerm) apply (b: FTerm) = FRdx(FApp(a, b))
 
-  def (a: (String, FTerm)) x (b: FTerm) = FVal(FSig(a._1, a._2, b))
+  def (a: (String, FTerm)) &: (b: FTerm) = FVal(FSig(a._1, a._2, b))
 
   given tupleToPairConditional[A, B](given ac: A => FTerm)(given bc: B => FTerm) : Conversion[(A, B), FTerm] = (a, b) => FVal(FPair(ac(a), bc(b)))
 

@@ -18,7 +18,7 @@ class FTermParserTest {
   @Test
   def `parse compound terms` = testing(fTermParser) {
     "Unit -> Unit" succeedsWith (unit ->: unit)
-    "Unit -> Unit & Unit" succeedsWith (unit ->: (unit x unit))
-    "Unit & Unit -> Unit" succeedsWith ((unit x unit) ->: unit)
+    "Unit -> Unit & Unit" succeedsWith (unit ->: (unit &: unit))
+    "Unit & Unit -> Unit" succeedsWith ((unit &: unit) ->: unit)
   }
 }

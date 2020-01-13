@@ -39,7 +39,7 @@ private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
    subParser.map(t => ("", t))
 
 private def sigCross : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
-  (spaces >> "&" << spaces).map(_ => _ x _)
+  (spaces >> "&" << spaces).map(_ => _ &: _)
 
 private def product : FTermParser = foldRight(typeDecl(singleton), sigCross, singleton) withName "<product>"
 
