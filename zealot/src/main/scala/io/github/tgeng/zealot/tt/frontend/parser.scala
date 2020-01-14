@@ -27,9 +27,12 @@ private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<ide
 
 private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
 
- val singleton =
+val singleton : FTermParser =
   setP | unitP | starP | reference |
   '(' >> spaces >> fTermParser << spaces << ')' withName "<singleton>"
+
+val application : FTermParser =
+  (singleton sepBy1 spaces).map(_.reduceLeft(_(_))) withName "<application>"
 
 private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
   '(' >> spaces >> (for {
@@ -39,14 +42,14 @@ private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
   } yield (id, ty)) << spaces << ')' |
    scoped{subParser}.map(t => ("", t)) withName s"<typeDecl(${subParser.name()})>"
 
-private def sigAmp : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
+private val sigAmp : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
   (spaces >> ("&"!) << spaces).map(_ => _ &: _)
 
-def product : FTermParser =
-  foldRight(typeDecl(singleton), sigAmp, singleton) withName "<product>"
+private val product : FTermParser =
+  foldRight(typeDecl(application), sigAmp, application) withName "<product>"
 
-private def piArrow : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
+private val piArrow : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
   (spaces >> ("->"!) << spaces).map(_ => _ ->: _)
 
-def fTermParser: FTermParser =
+val fTermParser: FTermParser =
   spaces >> foldRight(typeDecl(product), piArrow, product) withName "FTerm"
