@@ -8,9 +8,7 @@ val eof : Parser[Any, Unit] = not(any) withStrongName "<eof>"
 val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withStrongName "<skip>"
 def anyOf[I](candidates : Seq[I]) : Parser[I, I] = satisfy[I](candidates.contains(_)) withStrongName s"<anyOf{${candidates.mkString(", ")}}>"
 
-def suffixKind = Kind(9, "suffix")
-
-def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](suffixKind){
+def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](Kind(9, "*")){
   override def detailImpl = p.name(kind) + "*"
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
     val result = ArrayBuffer[T]()
@@ -29,20 +27,23 @@ def [I, T](p: Parser[I, T])* = new Parser[I, IndexedSeq[T]](suffixKind){
   }
 }
 
-def [I, T](p: Parser[I, T])+ : Parser[I, IndexedSeq[T]] = (for {
+def [I, T](p: Parser[I, T])+ : Parser[I, IndexedSeq[T]] = {
+  val kind = Kind(9, "+")
+  (for {
   t <- p
   ts <- p*
-} yield t +: ts) withDetailAndKind(p.name(suffixKind) + "+", suffixKind)
+} yield t +: ts) withDetailAndKind(p.name(kind) + "+", kind)
+}
 
-def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] =
+def [I, T](p: Parser[I, T])? : Parser[I, Option[T]] = {
+  val kind = Kind(9, "?")
   (p.map(Some[T]) | empty.map(_ => None)) withDetailAndKind(
-    p.name(suffixKind) + "?",
-    suffixKind
+    p.name(kind) + "?",
+    kind
   )
+}
 
-private val repeatKind = Kind(8, "n*_")
-
-def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatKind) {
+def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](Kind(8, "n*_")) {
   override def detailImpl = s"$count * " + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], IndexedSeq[T]] = {
     val position = input.position;
@@ -59,44 +60,50 @@ def [I, T](count: Int) *(p: Parser[I, T]) = new Parser[I, IndexedSeq[T]](repeatK
   }
 }
 
-val sepKind = Kind(0, "sep")
 
-def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
+def [I, T](p: Parser[I, T]) sepBy1 (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = {
+  val sepKind = Kind(0, "sepBy1")
   p +: ((s >> p)*) withDetailAndKind (
   s"${p.name(sepKind)} sepBy1 ${s.name(sepKind)}",
   sepKind)
+}
 
-def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] =
+def [I, T](p: Parser[I, T]) sepBy (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = {
+  val sepKind = Kind(0, "sepBy")
   (p.sepBy1(s) | empty.map(_ => IndexedSeq.empty)) withDetailAndKind (
   s"${p.name(sepKind)} sepBy ${s.name(sepKind)}",
   sepKind)
+}
 
 def [I, T](p: Parser[I, T]) sepByN (count: Int) (s: Parser[I, ?]) : Parser[I, IndexedSeq[T]] = {
+  val sepKind = Kind(0, "sepByN")
   count match {
     case 0 => empty.map{_ => IndexedSeq.empty[T]}
     case 1 => p.map(IndexedSeq[T](_))
     case n => p +: (n - 1) * (s >> p)
-  }
-} withDetailAndKind (
-  s"${p.name(sepKind)} sepByN($count) ${s.name(sepKind)}",
-  sepKind)
+  } withDetailAndKind (
+    s"${p.name(sepKind)} sepByN($count) ${s.name(sepKind)}",
+    sepKind)
+}
 
-val chainKind = Kind(0, "chain")
-
-def [I, T](elemParser: Parser[I, T]) chainedLeftBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] =
+def [I, T](elemParser: Parser[I, T]) chainedLeftBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] = {
+  val chainKind = Kind(0, "chainedLeftBy")
   foldLeft(elemParser, opParser, elemParser)
   .withDetailAndKind(
     s"${elemParser.name(chainKind)} chainedLeftBy ${opParser.name(chainKind)}",
     chainKind)
+}
 
-def [I, T](elemParser: Parser[I, T]) chainedRightBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] =
+def [I, T](elemParser: Parser[I, T]) chainedRightBy(opParser: Parser[I, (T, T) => T]) : Parser[I, T] = {
+  val chainKind = Kind(0, "chainedLeftBy")
   foldRight(elemParser, opParser, elemParser)
   .withDetailAndKind(
   s"${elemParser.name(chainKind)} chainedRightBy ${opParser.name(chainKind)}",
   chainKind)
+}
 
 def foldLeft[I, L, R](leftMostParser: Parser[I, L], opParser: Parser[I, (L, R) => L], elemParser: Parser[I, R]) : Parser[I, L] = {
-  val foldKind = Kind(10, "fold")
+  val foldKind = Kind(10, "foldLeft")
   (for {
     first <- leftMostParser
     rest <- (for {
@@ -109,7 +116,7 @@ def foldLeft[I, L, R](leftMostParser: Parser[I, L], opParser: Parser[I, (L, R) =
 }
 
 def foldRight[I, L, R](elemParser: Parser[I, L], opParser: Parser[I, (L, R) => R], rightMostParser: Parser[I, R]) : Parser[I, R] = {
-  val foldKind = Kind(10, "fold")
+  val foldKind = Kind(10, "foldRight")
   (for {
     front <- ((for {
       elem <- elemParser
