@@ -81,7 +81,7 @@ class ParsecTest {
       "0123" succeedsWith "123"
       "0abc" failsWithMessage """
         1: !/[0-7]+/
-        0: oct
+        0: oct := "0" >> !/[0-7]+/
         0: hex | oct | /.*/
       """
     }
@@ -177,7 +177,7 @@ class ParsecTest {
       "abc" succeedsWith Seq("abc" )
       "abc,def" succeedsWith Seq("abc", "def" )
       "~~" failsWithMessage """
-        0: word
+        0: word := /\w+/
         0: word sepBy1 ','
       """
     }
@@ -205,7 +205,7 @@ class ParsecTest {
     "(abc)" succeedsWith "abc"
     "(abc)def" succeedsWith "abc"
     "()" failsWithMessage """
-      1: word
+      1: word := /\w+/
       0: '(' >> word << ')'
     """
     "abc" failsWithMessage """
@@ -219,27 +219,27 @@ class ParsecTest {
   def `apply operator` = {
     val spaces = parser(' ')*
     val number = ("[0-9]+".r << spaces).map(_.toInt) withName "number"
-    testing(pure((a: Int, b: Int) => a + b, "Sum2")(number, number)) {
+    testing(pure((a: Int, b: Int) => a + b, "Sum2") $ (number, number)) {
       "12 34" succeedsWith 46
       "12 ab" failsWithMessage """
         3: /[0-9]+/
-        3: number
+        3: number := /[0-9]+/ << ' '*
         0: Sum2 $ (number, number)
       """
     }
-    testing(pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3")(number, number, number)) {
+    testing(pure((a: Int, b: Int, c: Int) => a + b + c, "Sum3") $ (number, number, number)) {
       "12 34 56" succeedsWith 102
       "12 34" failsWithMessage """
         5: /[0-9]+/
-        5: number
+        5: number := /[0-9]+/ << ' '*
         0: Sum3 $ (number, number, number)
       """
     }
-    testing(pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4")(number, number, number, number)) {
+    testing(pure((a: Int, b: Int, c: Int, d: Int) => a + b + c + d, "Sum4") $ (number, number, number, number)) {
     "12 34 56 78" succeedsWith 180
     "12 34 56 " failsWithMessage """
       9: /[0-9]+/
-      9: number
+      9: number := /[0-9]+/ << ' '*
       0: Sum4 $ (number, number, number, number)
     """
     }
@@ -273,8 +273,8 @@ class ParsecTest {
     testing(a + b) {
       "abc".succeedsWith[Char, IndexedSeq[Char]]("ab")
       "a" failsWithMessage """
-         1: 'b'
-         0: 'a' + 'b'
+        1: 'b'
+        0: 'a' + 'b'
       """
     }
     val ab = parser(a + b)

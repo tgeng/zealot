@@ -2,11 +2,11 @@ package io.github.tgeng.zealot.parsec
 
 import scala.collection.mutable.ArrayBuffer
 
-val empty: Parser[Any, Unit] = pure(()) withName "<empty>"
-def any[I] : Parser[I, I] = satisfy[I](_ => true) withName "<any>"
-val eof : Parser[Any, Unit] = not(any) withName "<eof>"
-val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withName "<skip>"
-def anyOf[I](candidates : Seq[I]) : Parser[I, I] = satisfy[I](candidates.contains(_)) withName s"<anyOf{${candidates.mkString(", ")}}>"
+val empty: Parser[Any, Unit] = pure(()) withStrongName "<empty>"
+def any[I] : Parser[I, I] = satisfy[I](_ => true) withStrongName "<any>"
+val eof : Parser[Any, Unit] = not(any) withStrongName "<eof>"
+val skip : Parser[Any, Unit] = satisfy[Any](_ => true).map(_ => ()) withStrongName "<skip>"
+def anyOf[I](candidates : Seq[I]) : Parser[I, I] = satisfy[I](candidates.contains(_)) withStrongName s"<anyOf{${candidates.mkString(", ")}}>"
 
 def suffixKind = Kind(9, "suffix")
 
@@ -95,7 +95,7 @@ def [I, T](elemParser: Parser[I, T]) chainedRightBy(opParser: Parser[I, (T, T) =
   s"${elemParser.name(chainKind)} chainedRightBy ${opParser.name(chainKind)}",
   chainKind)
 
-val foldKind = Kind(0, "fold")
+val foldKind = Kind(10, "fold")
 
 def foldLeft[I, L, R](leftMostParser: Parser[I, L], opParser: Parser[I, (L, R) => L], elemParser: Parser[I, R]) : Parser[I, L] = (for {
   first <- leftMostParser
@@ -135,7 +135,7 @@ def [I, T](p1: Parser[I, T]) << (p2: => Parser[I, ?]) : Parser[I, T] = (for {
 
 def applyKind = Kind(10, "apply")
 
-def [I, F, T](fnP: Parser[I, F => T]) apply(
+def [I, F, T](fnP: Parser[I, F => T]) $(
   fP: => Parser[I, F]
   ) : Parser[I, T] = (for {
   fn <- fnP
@@ -144,7 +144,7 @@ def [I, F, T](fnP: Parser[I, F => T]) apply(
   s"${fnP.name(applyKind)} $$ (${fP.name()})",
   applyKind)
 
-def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
+def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) $ (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   ) : Parser[I, T] = (for {
@@ -155,7 +155,7 @@ def [I, F1, F2, T](fnP: Parser[I, (F1, F2) => T]) apply(
   s"${fnP.name(applyKind)} $$ (${f1P.name()}, ${f2P.name()})",
   applyKind)
 
-def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
+def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) $ (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],
@@ -168,7 +168,7 @@ def [I, F1, F2, F3, T](fnP: Parser[I, (F1, F2, F3) => T]) apply(
   s"${fnP.name(applyKind)} $$ (${f1P.name()}, ${f2P.name()}, ${f3P.name()})",
   applyKind)
 
-def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) apply(
+def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) $ (
   f1P: => Parser[I, F1],
   f2P: => Parser[I, F2],
   f3P: => Parser[I, F3],

@@ -11,11 +11,18 @@ case class ParserError[-I](
   val failureParser: Parser[I, ?],
   val cause: ParserError[I] | Null) {
     override def toString() : String = {
+      val failureParserName = failureParser.name()
+      val failureParserDetail = failureParser.detail()
+      val detail = if (failureParserName == failureParserDetail) {
+        ""
+      } else {
+        " := " + failureParserDetail
+      }
       (if (cause == null) {
         ""
       } else {
         cause.toString() + "\n"
-      }) + s"$position: ${failureParser.name()}"
+      }) + s"$position: $failureParserName" + detail
     }
   }
 
@@ -54,7 +61,8 @@ trait Parser[-I, +T](
 
 def [I, T, R](p: Parser[I, T]) map(f: T => R): Parser[I, R] = {
   new Parser[I, R](p.kind) {
-    override def detailImpl = p.name(kind)
+    override def name(k: Kind) = p.name(k)
+    override def detailImpl = p.detailImpl
     override def parseImpl(input: ParserState[I]) : Either[ParserError[I] | Null, R] =
       p.parse(input).map(f)
   }
@@ -88,14 +96,14 @@ def [I, T](p: Parser[I, T]) withDetailFnAndKind(detailTransformer: String => Str
 
 def [I, T](p: Parser[I, T]) withDetailAndKind(newDetail: String, newKind: Kind) : Parser[I, T] = p.withDetailFnAndKind(_ => newDetail, newKind)
 
-def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = new Parser[I, T]() {
+def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = p.withNameAndDetail(newName, null)
+
+def [I, T](p: Parser[I, T]) withStrongName(newName: String) : Parser[I, T] = p.withNameAndDetail(newName, newName)
+
+private def [I, T](p: Parser[I, T]) withNameAndDetail(newName: String, newDetail: String|Null) : Parser[I, T] = new Parser[I, T](p.kind) {
   override def name(parentKind: Kind): String = newName
-  override def detailImpl = p.detailImpl
-  override def parse(input: ParserState[I]) : Either[ParserError[I], T] = p.parse(input) match {
-    case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
-    case t@_ => t
-  }
-  override def parseImpl(input: ParserState[I]) = throw UnsupportedOperationException()
+  override def detailImpl = if(newDetail == null) p.detailImpl else newDetail
+  override def parseImpl(input: ParserState[I]) = p.parse(input)
 }
 
 private val commitToKind = Kind(10, "!")
@@ -113,7 +121,7 @@ def [I, T](p: Parser[I, T])! = new Parser[I, T](commitToKind) {
   }
 }
 
-def scoped[I, T](p: Parser[I, T]) = new Parser[I, T](p.kind) {
+def scoped[I, T](p: Parser[I, T]) = new Parser[I, T]() {
   override def detailImpl = s"{ ${p.name()} }"
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
     val commitPosition = input.commitPosition

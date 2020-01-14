@@ -28,4 +28,4 @@ given parserMatchingString : Conversion[String, Parser[Char, String]] = (s: Stri
   }
 }
 
-given parserMatchingChar : Conversion[Char, Parser[Char, Char]] = (c: Char) => satisfy[Char](_ == c) withName s"'$c'"
+given parserMatchingChar : Conversion[Char, Parser[Char, Char]] = (c: Char) => satisfy[Char](_ == c) withStrongName s"'$c'"

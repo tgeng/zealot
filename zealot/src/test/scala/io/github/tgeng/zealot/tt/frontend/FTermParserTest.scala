@@ -16,11 +16,16 @@ class FTermParserTest {
   }
 
   @Test
-  def `parse compound terms` = testing(fTermParser) {
+  def `parse compound type terms` = testing(fTermParser) {
     "Unit -> Unit" succeedsWith (unit ->: unit)
     "Unit -> Unit & Unit" succeedsWith (unit ->: (unit &: unit))
     "Unit & Unit -> Unit" succeedsWith ((unit &: unit) ->: unit)
     "(A: Set0) -> A" succeedsWith (("A", set(0)) ->: "A".ref)
     "(A: Set0) & A" succeedsWith (("A", set(0)) &: "A".ref)
+    // "(A : Set0) -> (Eq : A -> A -> Set0) -> ((x : A) & Eq x x)" succeedsWith (
+      // ("A", set(0)) ->:
+      // ("Eq", ("A".ref ->: "A".ref ->: set(0))) ->:
+      // (("x", "A".ref) &: ("Eq".ref)("x".ref)("x".ref))
+    // )
   }
 }

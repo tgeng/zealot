@@ -6,8 +6,7 @@ import io.github.tgeng.zealot.tt.frontend.FBuilder.{given, _}
 
 type FTermParser = Parser[Char, FTerm]
 
-private val space = parser(' ')
-private val spaces = space*
+private val spaces = "\\s*".r withName "<spaces>"
 
 private val alphabet: Parser[Char, Char] =
   satisfy((c: Char) => Character.isAlphabetic(c)) withName "<alphabet>"
@@ -28,22 +27,26 @@ private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<ide
 
 private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
 
-private val singleton = setP | unitP | starP | reference | '(' >> spaces >> fTermParser << spaces << ')' withName "<singleton>"
+ val singleton =
+  setP | unitP | starP | reference |
+  '(' >> spaces >> fTermParser << spaces << ')' withName "<singleton>"
 
 private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
   '(' >> spaces >> (for {
     id <- identifier
     _ <- spaces >> ':' << spaces
-    ty <- scoped{subParser}
+    ty <- scoped{fTermParser}
   } yield (id, ty)) << spaces << ')' |
-   scoped{subParser}.map(t => ("", t))
+   scoped{subParser}.map(t => ("", t)) withName s"<typeDecl(${subParser.name()})>"
 
-private def sigCross : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
+private def sigAmp : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
   (spaces >> ("&"!) << spaces).map(_ => _ &: _)
 
-private def product : FTermParser = foldRight(typeDecl(singleton), sigCross, singleton) withName "<product>"
+def product : FTermParser =
+  foldRight(typeDecl(singleton), sigAmp, singleton) withName "<product>"
 
 private def piArrow : Parser[Char, ((String, FTerm), FTerm) => FTerm] =
   (spaces >> ("->"!) << spaces).map(_ => _ ->: _)
 
-def fTermParser: FTermParser =  foldRight(typeDecl(product), piArrow, product) withName "FTerm"
+def fTermParser: FTermParser =
+  spaces >> foldRight(typeDecl(product), piArrow, product) withName "FTerm"
