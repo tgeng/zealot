@@ -94,7 +94,7 @@ def [I, T](p: Parser[I, T]) withDetailFnAndKind(detailTransformer: String => Str
   }
 }
 
-def [I, T](p: Parser[I, T]) withDetailAndKind(newDetail: String, newKind: Kind) : Parser[I, T] = p.withDetailFnAndKind(_ => newDetail, newKind)
+def [I, T](p: Parser[I, T]) withDetailAndKind(newDetail: => String, newKind: Kind) : Parser[I, T] = p.withDetailFnAndKind(_ => newDetail, newKind)
 
 def [I, T](p: Parser[I, T]) withName(newName: String) : Parser[I, T] = p.withNameAndDetail(newName, null)
 

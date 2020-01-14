@@ -27,12 +27,26 @@ private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<ide
 
 private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
 
-val singleton : FTermParser =
-  setP | unitP | starP | reference |
-  '(' >> spaces >> fTermParser << spaces << ')' withName "<singleton>"
+val tuple : FTermParser = (fTermParser sepBy1 (spaces >> ',' << spaces)).map(_.reduceRight(tupleToPair(_, _)))
+
+val singleton : FTermParser = (for {
+  s <- (setP | unitP | starP | reference |
+       '(' >> spaces >> tuple << spaces << ')')
+  p <- (('.'!) >>
+        (parser('1').map[Char, Char, FTerm => FTerm](_ => p1) |
+         parser('2').map[Char, Char, FTerm => FTerm](_ => p2))
+       )?
+} yield p.map(_(s)).getOrElse(s)) withName "<singleton>"
+
+val lambda : FTermParser = (for {
+  _ <- ('\\'!)
+  args <- identifier sepBy1 (spaces >> (','!) << spaces)
+  _ <- ('.'!)
+  body <- fTermParser
+} yield args.foldRight(body)((arg: String, body: FTerm) => FTerm.FVal(FValue.FLam(arg, body)))) withName "<lambda>"
 
 val application : FTermParser =
-  (singleton sepBy1 spaces).map(_.reduceLeft(_(_))) withName "<application>"
+  ((lambda | singleton) sepBy1 spaces).map(_.reduceLeft(_(_))) withName "<application>"
 
 private def typeDecl(subParser: FTermParser) : Parser[Char, (String, FTerm)] =
   '(' >> spaces >> (for {

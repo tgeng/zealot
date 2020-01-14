@@ -28,9 +28,9 @@ object FBuilder {
 
   given tupleToPair : Conversion[(FTerm, FTerm), FTerm] = (a, b) => FVal(FPair(a, b))
 
-  def p1(a: FTerm) = FRdx(FPrj1(a))
+  def p1(a: FTerm) : FTerm = FRdx(FPrj1(a))
 
-  def p2(a: FTerm) = FRdx(FPrj2(a))
+  def p2(a: FTerm) : FTerm = FRdx(FPrj2(a))
 
   def unit = FVal(FUnit())
 
