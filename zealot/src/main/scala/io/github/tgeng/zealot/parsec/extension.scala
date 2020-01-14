@@ -95,27 +95,31 @@ def [I, T](elemParser: Parser[I, T]) chainedRightBy(opParser: Parser[I, (T, T) =
   s"${elemParser.name(chainKind)} chainedRightBy ${opParser.name(chainKind)}",
   chainKind)
 
-val foldKind = Kind(10, "fold")
+def foldLeft[I, L, R](leftMostParser: Parser[I, L], opParser: Parser[I, (L, R) => L], elemParser: Parser[I, R]) : Parser[I, L] = {
+  val foldKind = Kind(10, "fold")
+  (for {
+    first <- leftMostParser
+    rest <- (for {
+      op <- opParser
+      elem <- elemParser
+    } yield (op, elem))*
+  } yield rest.foldLeft(first)((acc, p) => p._1(acc, p._2))).withDetailAndKind(
+    s"foldLeft{${leftMostParser.name(foldKind)} (${opParser.name(foldKind)} ${elemParser.name(foldKind)})*}",
+    foldKind)
+}
 
-def foldLeft[I, L, R](leftMostParser: Parser[I, L], opParser: Parser[I, (L, R) => L], elemParser: Parser[I, R]) : Parser[I, L] = (for {
-  first <- leftMostParser
-  rest <- (for {
-    op <- opParser
-    elem <- elemParser
-  } yield (op, elem))*
-} yield rest.foldLeft(first)((acc, p) => p._1(acc, p._2))).withDetailAndKind(
-  s"foldLeft{${leftMostParser.name(foldKind)} (${opParser.name(foldKind)} ${elemParser.name(foldKind)})*}",
-  foldKind)
-
-def foldRight[I, L, R](elemParser: Parser[I, L], opParser: Parser[I, (L, R) => R], rightMostParser: Parser[I, R]) : Parser[I, R] = (for {
-  front <- ((for {
-    elem <- elemParser
-    op <- opParser
-  } yield (op, elem))*)
-  last <- rightMostParser
-} yield front.foldRight(last)((p, acc) => p._1(p._2, acc))).withDetailAndKind(
-  s"foldRight{(${elemParser.name(foldKind)} ${opParser.name(foldKind)})* ${rightMostParser.name(foldKind)}}",
-  foldKind)
+def foldRight[I, L, R](elemParser: Parser[I, L], opParser: Parser[I, (L, R) => R], rightMostParser: Parser[I, R]) : Parser[I, R] = {
+  val foldKind = Kind(10, "fold")
+  (for {
+    front <- ((for {
+      elem <- elemParser
+      op <- opParser
+    } yield (op, elem))*)
+    last <- rightMostParser
+  } yield front.foldRight(last)((p, acc) => p._1(p._2, acc))).withDetailAndKind(
+    s"foldRight{(${elemParser.name(foldKind)} ${opParser.name(foldKind)})* ${rightMostParser.name(foldKind)}}",
+    foldKind)
+}
 
 val prefixSuffixKind = Kind(4, "prefixSuffix")
 
