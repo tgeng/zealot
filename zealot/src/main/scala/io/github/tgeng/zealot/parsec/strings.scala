@@ -3,7 +3,9 @@ package io.github.tgeng.zealot.parsec
 import scala.language.implicitConversions
 import scala.util.matching.Regex
 
-given parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex) => new Parser[Char, String]() {
+private val regexKind = Kind(10, "regex")
+
+given parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex) => new Parser[Char, String](regexKind) {
   override def detailImpl = s"/$r/"
   override def parseImpl(input: ParserState[Char]) : Either[ParserError[Char] | Null, String] = {
     r.findPrefixOf(input.content.slice(input.position, input.content.length)) match {
@@ -16,7 +18,9 @@ given parserMatchingRegex : Conversion[Regex, Parser[Char, String]] = (r: Regex)
   }
 }
 
-given parserMatchingString : Conversion[String, Parser[Char, String]] = (s: String) => new Parser[Char, String]() {
+private val stringKind = Kind(10, "string")
+
+given parserMatchingString : Conversion[String, Parser[Char, String]] = (s: String) => new Parser[Char, String](stringKind) {
   override def detailImpl = "\"" + s + "\""
   override def parseImpl(input: ParserState[Char]) : Either[ParserError[Char] | Null, String] = {
     if (input.content.slice(input.position, input.position + s.length) startsWith s) {

@@ -41,7 +41,7 @@ val singleton : FTermParser = (for {
 val lambda : FTermParser = (for {
   _ <- ('\\'!)
   args <- identifier sepBy1 (spaces >> (','!) << spaces)
-  _ <- ('.'!)
+  _ <- spaces >> ("=>"!) << spaces
   body <- fTermParser
 } yield args.foldRight(body)((arg: String, body: FTerm) => FTerm.FVal(FValue.FLam(arg, body)))) withName "<lambda>"
 
