@@ -100,7 +100,7 @@ class TypeCheckTest {
     lam(lam(0.ref)) :< (set(0) ->: 0.ref ->: 1.ref)
 
     // (simple) compose function
-    //            A   B   C   f   g   &:  . f   (g   x)
+    //            A   B   C   f   g   x  => f    (g   x)
     val compose = lam(lam(lam(lam(lam(lam((2.ref)((1.ref)(0.ref))))))))
     val composeTy =
     //A
@@ -119,4 +119,7 @@ class TypeCheckTest {
       (3.ref)((1.ref)(0.ref))
     compose :< composeTy
   }
+
+  def (t1: Term) :< (t2: Term)(given ctx: TypeContext) = t1 should checkWithType(t2)
+  def (t1: Term) :> (t2: Term)(given ctx: TypeContext) = t1 should haveInferredType(t2)
 }

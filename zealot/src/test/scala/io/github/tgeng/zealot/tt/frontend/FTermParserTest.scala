@@ -12,7 +12,9 @@ class FTermParserTest {
     "Set0" succeedsWith set(0)
     "Set2" succeedsWith set(2)
     "Unit" succeedsWith unit
-    "Star" succeedsWith star
+    "()" succeedsWith star
+    "(())" succeedsWith star
+    "((()))" succeedsWith star
   }
 
   @Test

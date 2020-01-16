@@ -19,7 +19,6 @@ private val number = parser("[0-9]+".r).map(_.toInt) withName "<number>"
 
 private val setP : FTermParser = ("Set" >> number << not(alphanum)).map(set) withName "FSet"
 private val unitP : FTermParser = ("Unit" << not(alphanum)).map(_ => unit) withName "FUnit"
-private val starP : FTermParser = ("Star" << not(alphanum)).map(_ => star) withName "FStar"
 
 private val reserved = setP | unitP
 
@@ -27,10 +26,16 @@ private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<ide
 
 private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
 
-val tuple : FTermParser = (fTermParser sepBy1 (spaces >> ',' << spaces)).map(_.reduceRight(tupleToPair(_, _)))
+val tuple : FTermParser = (fTermParser sepBy (spaces >> ',' << spaces))
+  .map(elems =>
+    if (elems.isEmpty) {
+      star
+    } else {
+      elems.reduceRight(tupleToPair(_, _))
+    })
 
 val singleton : FTermParser = (for {
-  s <- (setP | unitP | starP | reference |
+  s <- (setP | unitP | reference |
        '(' >> spaces >> tuple << spaces << ')')
   p <- (('.'!) >>
         (parser('1').map[Char, Char, FTerm => FTerm](_ => p1) |

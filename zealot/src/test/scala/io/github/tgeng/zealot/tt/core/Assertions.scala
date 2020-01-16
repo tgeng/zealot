@@ -40,10 +40,6 @@ def haveInferredType(ty: Term)(given ctx: TypeContext) = AssertionBase[Term] { (
   }
 }
 
-def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)
-def (t1: Term) :< (t2: Term)(given ctx: TypeContext) = t1 should checkWithType(t2)
-def (t1: Term) :> (t2: Term)(given ctx: TypeContext) = t1 should haveInferredType(t2)
-
 def (e: TypeCheckError) messageWithStackTrace(indent: Int) = {
   val indentString = " " * indent
   List(indentString + e.getMessage)

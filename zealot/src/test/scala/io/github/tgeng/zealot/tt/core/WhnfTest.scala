@@ -55,4 +55,6 @@ class WhnfTest {
     val pair = t(100.ref, 200.ref)
     apply(extractFirst)(pair) ~~> 100.ref
   }
+
+  def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)
 }
