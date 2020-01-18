@@ -1,9 +1,21 @@
 package io.github.tgeng.zealot.tt.frontend
 
+import io.github.tgeng.zealot.tt.frontend.prettyPrint
+
 enum FTerm {
   case FRef(ref: FReference) extends FTerm
   case FVal(value: FValue) extends FTerm
   case FRdx(rdx: FRedux) extends FTerm
+
+  override def toString: String = {
+    toString(ToStringSpec())
+  }
+
+  def toString(spec: ToStringSpec) : String = {
+    val ctx = ToStringContext(spec)
+    this.prettyPrint(ctx)
+    ctx.getString
+  }
 }
 
 enum FReference {

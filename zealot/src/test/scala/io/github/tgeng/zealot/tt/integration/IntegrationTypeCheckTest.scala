@@ -34,9 +34,6 @@ class IntegrationTypeCheckTest {
     """
   }
 
-
-
-
   def (t1: String) :< (t2: String)(given ctx: TypeContext) =
     testStringAsTerm(t1, t2){ (t1, t2, ctx) =>
       t1 should checkWithType(t2)

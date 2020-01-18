@@ -15,6 +15,11 @@ class FTermParserTest {
     "()" succeedsWith star
     "(())" succeedsWith star
     "((()))" succeedsWith star
+    "pair.1" succeedsWith p1("pair".ref)
+    "(pair.1)" succeedsWith p1("pair".ref)
+    "pair.1.2" succeedsWith p2(p1("pair".ref))
+    "(pair.1).2" succeedsWith p2(p1("pair".ref))
+    "((pair.1).2)" succeedsWith p2(p1("pair".ref))
   }
 
   @Test

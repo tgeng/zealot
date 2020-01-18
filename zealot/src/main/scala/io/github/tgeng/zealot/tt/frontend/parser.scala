@@ -36,12 +36,12 @@ val tuple : FTermParser = (fTermParser sepBy (spaces >> ',' << spaces))
 
 val singleton : FTermParser = (for {
   s <- (setP | unitP | reference |
-       '(' >> spaces >> tuple << spaces << ')')
+        '(' >> spaces >> tuple << spaces << ')')
   p <- (('.'!) >>
         (parser('1').map[Char, Char, FTerm => FTerm](_ => p1) |
          parser('2').map[Char, Char, FTerm => FTerm](_ => p2))
-       )?
-} yield p.map(_(s)).getOrElse(s)) withName "<singleton>"
+       )*
+} yield p.foldLeft(s)((t, p) => p(t))) withName "<singleton>"
 
 val lambda : FTermParser = (for {
   _ <- ('\\'!)
