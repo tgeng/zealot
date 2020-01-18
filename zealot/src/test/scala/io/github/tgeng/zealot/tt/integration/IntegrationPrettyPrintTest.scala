@@ -15,15 +15,20 @@ class PrettyPrintTest {
     !"Star"
     !"Set0"
     !"Set1"
+    !"Unit -> Set0"
     !"(x : Unit) -> Set0"
     !"(x : Unit) -> Set0 -> Set1"
-    !"Unit -> Set0"
+    !"((x : Unit) -> Set0) -> Set1"
+    !"(A -> B) -> C"
     !"\\x => y"
     !"\\x, y => z"
     !"(x : Unit) & Set0 & Set1"
+    !"((x : Unit) & Set0) & Set1"
     !"Unit & Set0"
     !"(Unit, Set0)"
     !"(Unit, Set0, Set1)"
+    !"((a, b), c)"
+    !"(A & B) & C"
     !"fn arg1 arg2"
     !"pair.1"
     !"pair.2"
@@ -39,13 +44,51 @@ class PrettyPrintTest {
     !"\\x => (y, z)"
     !"\\x => a b c d e"
     !"(A -> B, A & B)"
+    !"(A & (B -> C), \\x => (y, z), (x : A) -> B & C)"
+  }
+
+  @Test
+  def `limit width` = {
+    given spec: ToStringSpec = ToStringSpec(10)
+    //--------
+    !"""
+    (
+      A -> B,
+      blahblahblah,
+      A &
+      B &
+      C &
+      D &
+      E,
+      \x =>
+        x
+        y
+        z
+        a
+        b
+        c,
+      \x, y, z, a, b, c =>
+        x y z)
+    """
+  }
+
+  @Test
+  def `compose function type` = {
+    !"""
+    (A : Set0) ->
+    (B : Set0) ->
+    (C : B -> Set0) ->
+    ((x : B) -> C x) ->
+    (g : A -> B) ->
+    (x : A) ->
+    C (g x)
+    """
   }
 
   private def (s: String)unary_!(given spec: ToStringSpec) = {
-    val termString = s.trimIndent
-    fTermParser.parse(termString) match {
-      case Right(ft) if ft.toString(spec) == termString => ()
-      case Right(ft) => ft.toString(spec) should equal(termString)
+    val expected = s.trimIndent
+    fTermParser.parse(expected) match {
+      case Right(ft) => ft.toString(spec) should equal(expected)
       case Left(e) => fail(e.toString)
     }
   }

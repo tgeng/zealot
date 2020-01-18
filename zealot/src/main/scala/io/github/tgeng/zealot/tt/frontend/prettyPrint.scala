@@ -20,7 +20,7 @@ class ToStringContext(spec: ToStringSpec) {
     while(lastCharIndex >= 0 && sb.charAt(lastCharIndex) == ' ') {
       lastCharIndex -= 1
     }
-    sb.delete(lastCharIndex, sb.size)
+    sb.delete(lastCharIndex + 1, sb.size)
 
     sb += '\n'
     currentLineStart = sb.size
@@ -29,10 +29,10 @@ class ToStringContext(spec: ToStringSpec) {
 
   def += (s: String) = sb ++= s
 
-  inline def indentMore(action: => Unit) : Unit = {
-    indent += 1
+  inline def indent(amount: Int)(action: => Unit) : Unit = {
+    indent += amount
     action
-    indent -= 1
+    indent -= amount
   }
 
   inline def indentHere(action: => Unit) : Unit = {
@@ -54,22 +54,15 @@ private def(b: Block|String) prettyPrint(given ctx: ToStringContext) : Unit = b 
   case b@Block(prefix, children, suffix) => {
     val insertNewLine = b.width > ctx.remainingLineWidth
     ctx += prefix
-    ctx.indentMore {
+    ctx.indent(if (prefix.isEmpty) 0 else 1) {
       var first = true
       children.foreach { child =>
-        if (first) {
-          first == false
-          if (prefix.nonEmpty && insertNewLine) {
-            ctx.newLine()
-          }
-        } else if (insertNewLine) {
+        if (insertNewLine && (!first || prefix.nonEmpty)) {
           ctx.newLine()
         }
+        first = false
         prettyPrint(child)
       }
-    }
-    if (suffix.nonEmpty && insertNewLine) {
-      ctx.newLine()
     }
     ctx += suffix
   }
@@ -145,7 +138,7 @@ private def(ft: FTerm) toBlock(parentLevel: Int = 0): Block|String = {
             case FVal(np@FPair(_, _)) => np
             case t => t
           })
-        val children : Seq[Block|String] = fsts.map(t => t.toBlock(ft.level) <+> ", ")
+        val children : Seq[Block|String] = fsts.map(t => t.toBlock(ft.level + 1) <+> ", ")
         Block("", children :+ snd.toBlock(ft.level) , "")
       }
       case _: FUnit => "Unit"
@@ -163,9 +156,9 @@ private def(ft: FTerm) toBlock(parentLevel: Int = 0): Block|String = {
         val childTerms = fn +: args.reverse
         val children : Seq[Block|String] = childTerms.zipWithIndex.map{(t, i) =>
           if (i == childTerms.size - 1) {
-            t.toBlock(ft.level)
+            t.toBlock(ft.level + 1)
           } else {
-            t.toBlock(ft.level) <+> " "
+            t.toBlock(ft.level + 1) <+> " "
           }
         }
         Block("", children , "")
@@ -192,20 +185,20 @@ private def (s: String) <+> (b: Block|String) : Block|String = b match {
 }
 
 private def(ft: FTerm) level : Int = ft match {
-  case _: FRef => 10
+  case _: FRef => 11
   case FVal(v) => v match {
-    case _: FSet => 10
-    case _: FPi => 2
+    case _: FSet => 11
+    case _: FPi => 3
     case _: FLam => 1
-    case _: FSig => 3
+    case _: FSig => 5
     case _: FPair => -1
-    case _: FUnit => 10
-    case _: FStar => 10
+    case _: FUnit => 11
+    case _: FStar => 11
   }
   case FRdx(r) => r match {
-    case _: FApp => 5
-    case _: FPrj1 => 7
-    case _: FPrj2 => 7
+    case _: FApp => 7
+    case _: FPrj1 => 9
+    case _: FPrj2 => 9
   }
 }
 
