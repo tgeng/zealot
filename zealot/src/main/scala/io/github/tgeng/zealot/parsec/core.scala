@@ -106,21 +106,6 @@ private def [I, T](p: Parser[I, T]) withNameAndDetail(newName: String, newDetail
   override def parseImpl(input: ParserState[I]) = p.parse(input)
 }
 
-private val commitToKind = Kind(10, "!")
-
-def [I, T](p: Parser[I, T])! = new Parser[I, T](commitToKind) {
-  override def detailImpl = p.name(kind) + "!"
-  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
-    p.parse(input) match {
-        case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
-        case t@_ => {
-          input.commitPosition = input.position
-          t
-        }
-    }
-  }
-}
-
 private val scopedKind = Kind(10, "scoped")
 
 def scoped[I, T](p: Parser[I, T]) = new Parser[I, T](scopedKind) {
@@ -133,6 +118,8 @@ def scoped[I, T](p: Parser[I, T]) = new Parser[I, T](scopedKind) {
   }
 }
 
+private val commitToKind = Kind(10, "!")
+
 def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](commitToKind) {
   override def detailImpl = "!" + p.name(kind)
   override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
@@ -140,6 +127,19 @@ def [I, T](p: Parser[I, T])unary_! = new Parser[I, T](commitToKind) {
     p.parse(input) match {
         case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
         case t@_ => t
+    }
+  }
+}
+
+def [I, T](p: Parser[I, T])! = new Parser[I, T](commitToKind) {
+  override def detailImpl = p.name(kind) + "!"
+  override def parseImpl(input: ParserState[I]) : Either[ParserError[I], T] = {
+    p.parse(input) match {
+        case Left(ParserError(position, failureParser, cause)) => Left(ParserError(position, this, cause))
+        case t@_ => {
+          input.commitPosition = input.position
+          t
+        }
     }
   }
 }
