@@ -32,7 +32,7 @@ val tuple : FTermParser = (fTermParser sepBy (spaces >> ',' << spaces))
       star
     } else {
       elems.reduceRight(tupleToPair(_, _))
-    })
+    }) withName "<tuple>"
 
 val singleton : FTermParser = (for {
   s <- (setP | unitP | reference |
