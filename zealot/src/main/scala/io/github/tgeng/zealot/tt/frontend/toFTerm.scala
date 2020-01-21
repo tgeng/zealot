@@ -99,6 +99,7 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
       case App(fn, arg) => (fn.toFTermDirectly())(arg.toFTermDirectly())
       case Prj1(pair) => p1(pair.toFTermDirectly())
       case Prj2(pair) => p2(pair.toFTermDirectly())
+      case Global(qn) => qn
     }
   }
 }

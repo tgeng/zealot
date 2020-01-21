@@ -72,6 +72,7 @@ private def [T](r: Redux[T])replaceIdxWithNum(offset: Int, tConverter : T => T)(
   case App(a, b) => App(tConverter(a), b.replaceIdxWithNum(offset + 1))
   case Prj1(p) => Prj1(tConverter(p))
   case Prj2(p) => Prj2(tConverter(p))
+  case Global(_) => r
 }
 
 private def (r: Reference)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Reference = r match {

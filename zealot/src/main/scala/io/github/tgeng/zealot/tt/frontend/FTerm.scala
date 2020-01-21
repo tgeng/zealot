@@ -1,5 +1,6 @@
 package io.github.tgeng.zealot.tt.frontend
 
+import io.github.tgeng.zealot.tt.core.QualifiedName
 import io.github.tgeng.zealot.tt.frontend.prettyPrint
 
 enum FTerm {
@@ -36,4 +37,5 @@ enum FRedux {
   case FApp(fn: FTerm, arg: FTerm)
   case FPrj1(pair: FTerm)
   case FPrj2(pair: FTerm)
+  case FGlobal(qn: QualifiedName)
 }

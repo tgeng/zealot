@@ -9,6 +9,7 @@ import io.github.tgeng.zealot.tt.frontend._
 class IntegrationTypeCheckTest {
 
   given ctx : TypeContext = TypeContext()
+  given glbCtx: GlobalContext = GlobalContext()
 
   @Test
   def `basic cases` = {

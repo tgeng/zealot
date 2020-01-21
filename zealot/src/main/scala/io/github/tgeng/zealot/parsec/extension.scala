@@ -202,11 +202,11 @@ def [I, F1, F2, F3, F4, T](fnP: Parser[I, (F1, F2, F3, F4) => T]) $ (
 
 val prependAppendConcat = Kind(7, "prependAppendConcat")
 
-def [I, T](p1: Parser[I, T]) + (p2: Parser[I, T]) : Parser[I, IndexedSeq[T]] = (for {
+def [I, T](p1: Parser[I, T]) +:+ (p2: Parser[I, T]) : Parser[I, IndexedSeq[T]] = (for {
   t1 <- p1
   t2 <- p2
 } yield IndexedSeq(t1, t2)).withDetailAndKind(
-  s"${p1.name(prependAppendConcat)} + ${p2.name(prependAppendConcat)}",
+  s"${p1.name(prependAppendConcat)} +:+ ${p2.name(prependAppendConcat)}",
   prependAppendConcat)
 
 def [I, T, S <: IndexedSeq[T]](p1: Parser[I, T]) +: (p2: Parser[I, IndexedSeq[T]]) : Parser[I, IndexedSeq[T]] = (for {

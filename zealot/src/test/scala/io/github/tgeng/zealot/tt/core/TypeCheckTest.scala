@@ -9,6 +9,7 @@ import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 class TypeCheckTest {
 
   given ctx : TypeContext = TypeContext()
+  given glbCtx: GlobalContext = GlobalContext()
 
   @Test
   def `basic type check` = {

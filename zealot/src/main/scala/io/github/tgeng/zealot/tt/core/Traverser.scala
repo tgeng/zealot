@@ -76,6 +76,7 @@ trait Traverser[T](bindingConstructToT: HasBinder => T) {
     case a@App(_, _) => visitApp(a)
     case p@Prj1(_) => visitPrj1(p)
     case p@Prj2(_) => visitPrj2(p)
+    case g@Global(_) => visitGlobal(g)
   }
 
   def visitApp(a: App[Term])(given ctx: Context[T]) : scala.Unit = {
@@ -90,6 +91,8 @@ trait Traverser[T](bindingConstructToT: HasBinder => T) {
   def visitPrj2(p: Prj2[Term])(given ctx: Context[T]) : scala.Unit = {
     visitTerm(p.pair)
   }
+
+  def visitGlobal(g: Global[Term])(given ctx: Context[T]) : scala.Unit = ()
 }
 
 def [T](t: Term) traverse(traverser: Traverser[T])(given ctx: Context[T]) : scala.Unit =

@@ -9,7 +9,6 @@ enum QualifiedName {
 
   override def toString: String = this match {
     case Root() => ""
-    case Sub(Root(), name) => name
     case Sub(parent, name) => parent.toString + "." + name
   }
 

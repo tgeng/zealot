@@ -23,6 +23,7 @@ object Builder {
 
   given tupleToPairConditional[A, B](given ac: A => Term)(given bc: B => Term) : Conversion[(A, B), Term] = (a, b) => Term.Val(Value.Pair(ac(a), bc(b)))
   given tupleToPair : Conversion[(Term, Term), Term] = (a, b) => Term.Val(Value.Pair(a, b))
+  given qualifiedNameToGlobal : Conversion[QualifiedName, Term] = (qn: QualifiedName) => Term.Rdx(Redux.Global(qn))
 
   def p1(a: Term) = Term.Rdx(Redux.Prj1(a))
 

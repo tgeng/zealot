@@ -1,5 +1,6 @@
 package io.github.tgeng.zealot.tt.frontend
 
+import io.github.tgeng.zealot.tt.core.QualifiedName
 import FTerm._
 import FReference._
 import FValue._
@@ -25,8 +26,8 @@ object FBuilder {
   def (a: (String, FTerm)) &: (b: FTerm) = FVal(FSig(a._1, a._2, b))
 
   given tupleToPairConditional[A, B](given ac: A => FTerm)(given bc: B => FTerm) : Conversion[(A, B), FTerm] = (a, b) => FVal(FPair(ac(a), bc(b)))
-
   given tupleToPair : Conversion[(FTerm, FTerm), FTerm] = (a, b) => FVal(FPair(a, b))
+  given qualifiedNameToGlobal : Conversion[QualifiedName, FTerm] = (qn: QualifiedName) => FTerm.FRdx(FRedux.FGlobal(qn))
 
   def p1(a: FTerm) : FTerm = FRdx(FPrj1(a))
 

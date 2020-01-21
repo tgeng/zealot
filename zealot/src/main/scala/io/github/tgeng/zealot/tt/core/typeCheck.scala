@@ -10,21 +10,21 @@ import io.github.tgeng.zealot.tt.core.Reference._
 import io.github.tgeng.zealot.tt.core.Value._
 import io.github.tgeng.zealot.tt.core.Whnf._
 
-def (t: Term) checkType(ty: Term)(given ctx: TypeContext) : Either[TypeCheckError, Unit] = try {
+def (t: Term) checkType(ty: Term)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = try {
   given errCtx : ErrorContext = Seq.empty
   t.whnf.checkType(ty.whnf)(given Seq.empty)
 } catch {
   case e: WhnfStuckException => Left(e.toTypeCheckError())
 }
 
-def (t: Term) inferType()(given ctx: TypeContext) : Either[TypeCheckError, Type] = try {
+def (t: Term) inferType()(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Type] = try {
   given errCtx : ErrorContext = Seq.empty
   t.whnf.inferType()(given Seq.empty)
 } catch {
   case e: WhnfStuckException => Left(e.toTypeCheckError())
 }
 
-private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx: TypeContext) : Either[TypeCheckError, Unit] = {
+private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Check(t, ty))
   (t, ty) match {
     case (Val(Lam(body)), Val(Pi(argTy, bodyTy))) => {
@@ -53,7 +53,7 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
   }
 }
 
-private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeContext) : Either[TypeCheckError, Whnf] = {
+private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Whnf] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Infer(t))
     t match {
     case Neu(v) => v match {
@@ -78,6 +78,10 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeCon
           sig <- pairTy.checkSigType()
           (aTy, bTy) = sig
         } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pair).term))).whnf
+        case Global(qn) => glbCtx.getType(qn) match {
+          case Some(ty) => Right(ty.whnf)
+          case _ => Left(TypeCheckError(s"Could not find global reference $qn", errCtx, ctx.snapshot))
+        }
       }
     }
     case Val(v) => v match {
@@ -116,7 +120,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeCon
   }
 }
 
-private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: TypeContext) : Either[TypeCheckError, Unit] = {
+private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Subtype(a, b))
   def raiseError() = Left(TypeCheckError(s"$a is not a subtype of $b.", errCtx, ctx.snapshot))
   (a, b) match {
@@ -138,7 +142,7 @@ private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: TypeCo
 }
 
 // TODO(tgeng): consider doing this coinductively
-private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given ctx: TypeContext) : Either[TypeCheckError, Unit] = {
+private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.TermConvertible(a, b, ty))
   def raiseError() = Left(TypeCheckError(s"Term $a and $b are not convertible.", errCtx, ctx.snapshot))
   if (a == b) return Right(())
@@ -178,7 +182,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
 }
 
 // TODO(tgeng): consider doing this co-inductively
-private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx: TypeContext) : Either[TypeCheckError, Type] = {
+private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Type] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.NeutralConvertible(a, b))
   def raiseError() = Left(TypeCheckError(s"Neutral $a and $b are not convertible.", errCtx, ctx.snapshot))
   (a, b) match {

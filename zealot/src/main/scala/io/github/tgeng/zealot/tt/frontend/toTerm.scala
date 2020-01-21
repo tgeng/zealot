@@ -53,6 +53,7 @@ def (ft: FTerm) toTerm()(given ctx: DeBruijnContext) : Either[DeBruijnizationErr
       } yield fn(arg)
       case FPrj1(fPair) => fPair.toTerm().map(p1)
       case FPrj2(fPair) => fPair.toTerm().map(p2)
+      case FGlobal(qn) => t(qn)
     }
   }
 }

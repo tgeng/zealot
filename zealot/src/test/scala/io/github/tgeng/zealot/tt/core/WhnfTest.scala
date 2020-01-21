@@ -7,6 +7,9 @@ import io.github.tgeng.zealot.tt.core._
 import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 
 class WhnfTest {
+
+  given glbCtx: GlobalContext = GlobalContext()
+
   @Test
   def `value should remain as value` = {
     star ~~> star

@@ -1,10 +1,11 @@
 package io.github.tgeng.zealot.tt.core
 
 import scala.collection.immutable.Seq
+import io.github.tgeng.zealot.common.OptionSugar._
 
 class WhnfStuckException(val message: String, val errorContext: ErrorContext) extends Exception(message) {}
 
-def (t: Term) whnf(given errCtx: ErrorContext): Whnf = t match {
+def (t: Term) whnf(given errCtx: ErrorContext)(given glbCtx: GlobalContext): Whnf = t match {
   case Term.Ref(r) => Whnf.Neu(Neutral.Ref(r))
   case Term.Val(v) => Whnf.Val(v)
   case Term.Rdx(r) => r match {
@@ -31,6 +32,7 @@ def (t: Term) whnf(given errCtx: ErrorContext): Whnf = t match {
         case _ => throw WhnfStuckException("Expected " + v + " to be a pair.", errCtx)
       }
     }
+    case Redux.Global(qn) => glbCtx.getTerm(qn).map(_.whnf).orThrow(WhnfStuckException(s"Could not find global reference $qn", errCtx))
   }
 }
 

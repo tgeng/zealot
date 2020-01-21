@@ -16,6 +16,7 @@ enum Whnf {
 enum Neutral {
   case Ref(ref: Reference)
   case Rdx(rdx: Redux[Neutral])
+  // Consider adding frozen constructor for diverging terms after termination check is implemented.
 }
 
 enum Reference {
@@ -58,6 +59,7 @@ enum Redux[T] {
   case App(fn: T, arg: Term)
   case Prj1(pair: T)
   case Prj2(pair: T)
+  case Global(qn: QualifiedName)
 }
 
 private def neutralToTerm(n: Neutral) : Term = n match {
@@ -69,6 +71,7 @@ private def map[F, T](mapper: F => T)(input: Redux[F]) : Redux[T] = input match 
   case Redux.App(fn, arg) => Redux.App(mapper(fn), arg)
   case Redux.Prj1(pair) => Redux.Prj1(mapper(pair))
   case Redux.Prj2(pair) => Redux.Prj2(mapper(pair))
+  case Redux.Global(qn) => Redux.Global(qn)
 }
 
 def (t: Term) raise(amount: Int, bar: Int) =
@@ -115,6 +118,7 @@ private def [T](r: Redux[T]) raised(tRaiser: T => (given RaiseSpec) => T)(given 
   case Redux.App(fn, arg) => Redux.App(tRaiser(fn), arg.raised)
   case Redux.Prj1(t) => Redux.Prj1(tRaiser(t))
   case Redux.Prj2(t) => Redux.Prj2(tRaiser(t))
+  case Redux.Global(_) => r
 }
 
 private def (t: Term) substituted(given spec: SubstituteSpec) : Term = t match {
@@ -136,6 +140,7 @@ private def (r: Redux[Term]) substituted(given spec: SubstituteSpec) : Redux[Ter
   case Redux.App(fn, arg) => Redux.App(fn.substituted, arg.substituted)
   case Redux.Prj1(t) => Redux.Prj1(t.substituted)
   case Redux.Prj2(t) => Redux.Prj2(t.substituted)
+  case Redux.Global(_) => r
 }
 
 private case class RaiseSpec(amount: Int, bar: Int) {

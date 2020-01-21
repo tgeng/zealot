@@ -165,6 +165,7 @@ private def(ft: FTerm) toBlock(parentLevel: Int = 0): Block|String = {
       }
       case FPrj1(pair) => pair.toBlock(ft.level) <+> ".1"
       case FPrj2(pair) => pair.toBlock(ft.level) <+> ".2"
+      case FGlobal(qn) => qn.toString
     }
   }
   if (ft.level < parentLevel) {
@@ -199,6 +200,7 @@ private def(ft: FTerm) level : Int = ft match {
     case _: FApp => 7
     case _: FPrj1 => 9
     case _: FPrj2 => 9
+    case _: FGlobal => 11
   }
 }
 

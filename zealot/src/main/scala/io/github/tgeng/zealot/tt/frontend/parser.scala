@@ -1,6 +1,7 @@
 package io.github.tgeng.zealot.tt.frontend
 
 import scala.language.implicitConversions
+import io.github.tgeng.zealot.tt.core.root
 import io.github.tgeng.zealot.parsec.{given, _}
 import io.github.tgeng.zealot.tt.frontend.FBuilder.{given, _}
 
@@ -25,6 +26,8 @@ private val reserved = setP | unitP
 private val identifier = parser("[a-zA-Z]\\w*".r) & not(reserved) withName "<identifier>"
 
 private val reference : FTermParser = identifier.map(_.ref) withName "FRef"
+private val globalReference : FTermParser =
+  (('.' >> identifier)+).map(parts => ft(parts.foldLeft(root)((parent, name) => parent / name))) withName "FGlobal"
 
 val tuple : FTermParser = (fTermParser sepBy (spaces >> ',' << spaces))
   .map(elems =>
@@ -35,7 +38,7 @@ val tuple : FTermParser = (fTermParser sepBy (spaces >> ',' << spaces))
     }) withName "<tuple>"
 
 val singleton : FTermParser = (for {
-  s <- (setP | unitP | reference |
+  s <- (setP | unitP | reference | globalReference |
         '(' >> spaces >> tuple << spaces << ')')
   p <- (('.'!) >>
         (parser('1').map[Char, Char, FTerm => FTerm](_ => p1) |
