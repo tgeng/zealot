@@ -77,7 +77,7 @@ private def(ft: FTerm) toBlock(parentLevel: Int = 0): Block|String = {
   val result: Block|String = ft match {
     case FRef(FName(name)) => name
     case FVal(v) => v match {
-      case FSet(l) => s"Set$l"
+      case FSet(l) => if (l == 0) ".zealot.Set" else s".zealot.Set$l"
       case p: FPi => {
         val (doms, cod) = flatten[FPi, (String, FTerm), FTerm](
           p,
@@ -141,7 +141,7 @@ private def(ft: FTerm) toBlock(parentLevel: Int = 0): Block|String = {
         val children : Seq[Block|String] = fsts.map(t => t.toBlock(ft.level + 1) <+> ", ")
         Block("", children :+ snd.toBlock(ft.level) , "")
       }
-      case _: FUnit => "Unit"
+      case _: FUnit => ".zealot.Unit"
       case _: FStar => "()"
     }
     case FRdx(r) => r match {

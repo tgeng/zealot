@@ -5,7 +5,7 @@ import io.github.tgeng.zealot.common._
 
 enum QualifiedName {
   case Root()
-  case Sub(parent: QualifiedName, name: String)
+  case Sub(val parent: QualifiedName, val name: String)
 
   override def toString: String = this match {
     case Root() => ""

@@ -26,13 +26,14 @@ def checkWithType(ty: Term)(given ctx: TypeContext)(given glbCtx: GlobalContext)
 }
 
 def haveInferredType(ty: Term)(given ctx: TypeContext)(given glbCtx: GlobalContext) = AssertionBase[Term] { (t, objective) =>
+  given errCtx : ErrorContext = Seq.empty
   (t.inferType(), objective) match {
     case (Left(e), true) => Some(s"to have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Left(e), false) => Some(s"to not have inferred type\n  $ty\nbut it failed with message:\n${e.messageWithStackTrace(2)}")
     case (Right(inferredType), _) =>
-    if (objective && inferredType.term != ty) {
+    if (objective && inferredType != ty.whnf) {
       Some(s"to have inferred type\n  $ty\nbut it has inferred type\n  $inferredType")
-    } else if (!objective && inferredType.term == ty) {
+    } else if (!objective && inferredType == ty.whnf) {
       Some(s"to not have inferred type\n  $ty")
     } else {
       None

@@ -13,26 +13,34 @@ class IntegrationTypeCheckTest {
 
   @Test
   def `basic cases` = {
-    "Unit" :> "Set0"
-    "()" :> "Unit"
-    "Set0" :> "Set1"
-    "Set1" :> "Set2"
-    "(Unit, Set0)" :< "Set0 & Set1"
-    "Set0 & Set1" :> "Set2"
-    "\\x => x" :< "Unit -> Unit"
-    "Set0 -> Set1" :> "Set2"
-    "\\A, x => x" :< "(A: Set0) -> (x: A) -> A"
+    ".zealot.Unit" :> ".zealot.Set"
+    "()" :> ".zealot.Unit"
+    ".zealot.Set" :> ".zealot.Set1"
+    ".zealot.Set1" :> ".zealot.Set2"
+    "(.zealot.Unit, .zealot.Set0)" :< ".zealot.Set0 & .zealot.Set1"
+    ".zealot.Set & .zealot.Set1" :> ".zealot.Set2"
+    "\\x => x" :< ".zealot.Unit -> .zealot.Unit"
+    ".zealot.Set -> .zealot.Set1" :> ".zealot.Set2"
+    "\\A, x => x" :< "(A: .zealot.Set) -> (x: A) -> A"
 
     "\\A, B, C, f, g, x => f(g x)" :<
     """
-      (A: Set0) ->
-      (B: Set0) ->
-      (C: B -> Set0) ->
+      (A: .zealot.Set) ->
+      (B: .zealot.Set) ->
+      (C: B -> .zealot.Set) ->
       ((x: B) -> C x) ->
       (g: A -> B) ->
       (x: A) ->
       C (g x)
     """
+  }
+
+  @Test
+  def `global reference` = {
+    import io.github.tgeng.zealot.tt.core.Builder.{given, _}
+
+    ".zealot.Unit" :> ".zealot.Set"
+    ".zealot.Star" :> ".zealot.Unit"
   }
 
   def (t1: String) :< (t2: String)(given ctx: TypeContext) =
@@ -55,7 +63,7 @@ class IntegrationTypeCheckTest {
     } yield op(t1, t2, ctx)) match {
       case Right(_) => ()
       case Left(e: Exception) => throw e
-      case Left(e) => fail(e.toString)
+      case Left(e) => fail(s"Testing\n  $s1\nand\n  $s2\n" + e.toString)
     }
   }
 }

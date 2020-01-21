@@ -6,8 +6,7 @@ import io.github.tgeng.zealot.tt.core._
 object Main {
 
   def main(args: Array[String]): Unit = {
-    root/"Nat" |: set(0) where {
-      "Z" |: unit
-    }
+    val ctx = GlobalContext()
+    println(ctx.get(root/"zealot"/"Set"))
   }
 }

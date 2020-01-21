@@ -32,6 +32,9 @@ class TypeCheckTest {
     (star) shouldNot checkWithType(star)
     (set(1) ->: set(2)) shouldNot checkWithType(set(2))
     lam(star) shouldNot checkWithType(star ->: unit)
+
+    root/"zealot"/"Unit" :> set(0)
+    root/"zealot"/"Star" :> unit
   }
 
   @Test

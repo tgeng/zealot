@@ -59,5 +59,13 @@ class WhnfTest {
     apply(extractFirst)(pair) ~~> 100.ref
   }
 
+  @Test
+  def `global reference` = {
+    glbCtx(root/"abc") = (root/"def", set(0))
+    glbCtx(root/"def") = (unit, set(0))
+
+    t(root/"def") ~~> unit
+  }
+
   def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)
 }
