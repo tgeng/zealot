@@ -41,7 +41,7 @@ private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx:
       val aTyWhnf = aTy.whnf
       for {
         _ <- a.whnf.checkType(aTyWhnf)
-        result <- b.whnf.checkType(bTy.substituteOutmost(a).whnf)
+        result <- b.whnf.checkType(bTy.substituteOpen(a).whnf)
       } yield result
     }
     case _ => for {
@@ -67,7 +67,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeCon
           pi <- fnTy.checkPiType()
           (argTy, bodyTy) = pi
           _ <- arg.whnf.checkType(argTy.whnf)
-        } yield bodyTy.substituteOutmost(arg).whnf
+        } yield bodyTy.substituteOpen(arg).whnf
         case Prj1(pair) => for {
           pairTy <- Neu(pair).inferType()
           sig <- pairTy.checkSigType()
@@ -77,7 +77,7 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeCon
           pairTy <- Neu(pair).inferType()
           sig <- pairTy.checkSigType()
           (aTy, bTy) = sig
-        } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pair).term))).whnf
+        } yield bTy.substituteOpen(Term.Rdx(Prj1(Neu(pair).term))).whnf
         case Global(qn) => glbCtx.getType(qn) match {
           case Some(ty) => Right(ty.whnf)
           case _ => Left(TypeCheckError(s"Could not find global reference $qn", errCtx, ctx.snapshot))
@@ -174,7 +174,7 @@ private def (a: Whnf) ~= (b: Whnf)(ty: Type)(given errCtx: ErrorContext)(given c
     }
     case (Val(Sig(aTy, bTy)), _, _) => for {
       _ <- (p1(a.term).whnf ~= p1(b.term).whnf)(aTy.whnf)
-      _ <- (p2(a.term).whnf ~= p2(b.term).whnf)(bTy.substituteOutmost(a.term).whnf)
+      _ <- (p2(a.term).whnf ~= p2(b.term).whnf)(bTy.substituteOpen(a.term).whnf)
     } yield ()
     case (_, Neu(nA), Neu(nB)) => (nA === nB).map { _ => ()}
     case _ => raiseError()
@@ -201,7 +201,7 @@ private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx:
       pi <- fnTy.checkPiType()
       (argTy, bodyTy) = pi
       _ <- (aArg.whnf ~= bArg.whnf)(argTy.whnf)
-    } yield bodyTy.substituteOutmost(aArg).whnf
+    } yield bodyTy.substituteOpen(aArg).whnf
     case (Rdx(Prj1(pairA)), Rdx(Prj2(pairB))) => for {
       pairTy <- pairA === pairB
       sig <- pairTy.checkSigType()
@@ -211,7 +211,7 @@ private def (a: Neutral) === (b: Neutral)(given errCtx: ErrorContext)(given ctx:
       pairTy <- pairA === pairB
       sig <- pairTy.checkSigType()
       (aTy, bTy) = sig
-    } yield bTy.substituteOutmost(Term.Rdx(Prj1(Neu(pairA).term))).whnf
+    } yield bTy.substituteOpen(Term.Rdx(Prj1(Neu(pairA).term))).whnf
     case _ => raiseError()
   }
 }

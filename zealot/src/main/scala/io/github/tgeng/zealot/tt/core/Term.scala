@@ -22,8 +22,7 @@ enum Neutral {
 enum Reference {
   // De Bruijn index
   case Idx(idx: Int)
-  // De Bruijn number (aka context size - 1 - index). Used by type checking
-  // logic. Client code should not use this.
+  // De Bruijn number (aka context size - 1 - index).
   case Num(num: Int)
 }
 
@@ -80,8 +79,8 @@ def (t: Term) raise(amount: Int, bar: Int) =
 // def (t: Whnf) raise(amount: Int, bar: Int) =
 //   t.raised(given RaiseSpec(amount, bar))
 
-def (t: Term) substituteOutmost(substitute: Term) = t.substitute(0, substitute.raise(1, 0)).raise(-1, 0)
-
+def (t: Term) substituteOpen(substitute: Term) = t.substitute(0, substitute.raise(1, 0)).raise(-1, 0)
+def (t: Term) substituteClosed(substitute: Term) = t.substitute(0, substitute)
 
 def (t: Term) substitute(targetIndex: Int, substitute: Term) =
   t.substituted(given SubstituteSpec(targetIndex: Int, substitute: Term))
