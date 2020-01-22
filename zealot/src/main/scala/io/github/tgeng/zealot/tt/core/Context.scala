@@ -41,41 +41,44 @@ class Context[T] {
 }
 
 class TypeContext extends Context[Type] {
-  override def processElement(ty: Type) = ty.replaceIdxWithNum(0)(given this)
+  override def processElement(ty: Type) = ty.replaceIdxWithNum(this)
 }
 
-private def (w: Whnf)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Whnf = w match {
-  case Neu(n) => Neu(n.replaceIdxWithNum(offset))
-  case Whnf.Val(v) => Whnf.Val(v.replaceIdxWithNum(offset))
+def (t: Term) replaceIdxWithNum(ctx: Context[?]) = t.replaceIdxWithNumImpl(0)(given ctx)
+def (t: Whnf) replaceIdxWithNum(ctx: Context[?]) = t.replaceIdxWithNumImpl(0)(given ctx)
+
+private def (w: Whnf)replaceIdxWithNumImpl(offset: Int)(given ctx: Context[?]) : Whnf = w match {
+  case Neu(n) => Neu(n.replaceIdxWithNumImpl(offset))
+  case Whnf.Val(v) => Whnf.Val(v.replaceIdxWithNumImpl(offset))
 }
 
-private def (t: Term)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Term = t match {
-  case Term.Ref(r) => Term.Ref(r.replaceIdxWithNum(offset))
-  case Term.Val(v) => Term.Val(v.replaceIdxWithNum(offset))
-  case Term.Rdx(r) => Term.Rdx(r.replaceIdxWithNum(offset, _.replaceIdxWithNum(offset)))
+private def (t: Term)replaceIdxWithNumImpl(offset: Int)(given ctx: Context[?]) : Term = t match {
+  case Term.Ref(r) => Term.Ref(r.replaceIdxWithNumImpl(offset))
+  case Term.Val(v) => Term.Val(v.replaceIdxWithNumImpl(offset))
+  case Term.Rdx(r) => Term.Rdx(r.replaceIdxWithNumImpl(offset, _.replaceIdxWithNumImpl(offset)))
 }
 
-private def (n: Neutral)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Neutral = n match {
-  case Neutral.Ref(r) => Neutral.Ref(r.replaceIdxWithNum(offset))
-  case Neutral.Rdx(r) => Neutral.Rdx(r.replaceIdxWithNum(offset, _.replaceIdxWithNum(offset)))
+private def (n: Neutral)replaceIdxWithNumImpl(offset: Int)(given ctx: Context[?]) : Neutral = n match {
+  case Neutral.Ref(r) => Neutral.Ref(r.replaceIdxWithNumImpl(offset))
+  case Neutral.Rdx(r) => Neutral.Rdx(r.replaceIdxWithNumImpl(offset, _.replaceIdxWithNumImpl(offset)))
 }
 
-private def (v: Value)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Value = v match {
-  case v@Pi(a, b) => Pi(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.binder)
-  case v@Lam(a) => Lam(a.replaceIdxWithNum(offset + 1))(v.binder)
-  case v@Sig(a, b) => Sig(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset + 1))(v.binder)
-  case Pair(a, b) => Pair(a.replaceIdxWithNum(offset), b.replaceIdxWithNum(offset))
+private def (v: Value)replaceIdxWithNumImpl(offset: Int)(given ctx: Context[?]) : Value = v match {
+  case v@Pi(a, b) => Pi(a.replaceIdxWithNumImpl(offset), b.replaceIdxWithNumImpl(offset + 1))(v.binder)
+  case v@Lam(a) => Lam(a.replaceIdxWithNumImpl(offset + 1))(v.binder)
+  case v@Sig(a, b) => Sig(a.replaceIdxWithNumImpl(offset), b.replaceIdxWithNumImpl(offset + 1))(v.binder)
+  case Pair(a, b) => Pair(a.replaceIdxWithNumImpl(offset), b.replaceIdxWithNumImpl(offset))
   case _ => v
 }
 
-private def [T](r: Redux[T])replaceIdxWithNum(offset: Int, tConverter : T => T)(given ctx: TypeContext) : Redux[T] = r match {
-  case App(a, b) => App(tConverter(a), b.replaceIdxWithNum(offset + 1))
+private def [T](r: Redux[T])replaceIdxWithNumImpl(offset: Int, tConverter : T => T)(given ctx: Context[?]) : Redux[T] = r match {
+  case App(a, b) => App(tConverter(a), b.replaceIdxWithNumImpl(offset + 1))
   case Prj1(p) => Prj1(tConverter(p))
   case Prj2(p) => Prj2(tConverter(p))
   case Global(_) => r
 }
 
-private def (r: Reference)replaceIdxWithNum(offset: Int)(given ctx: TypeContext) : Reference = r match {
+private def (r: Reference)replaceIdxWithNumImpl(offset: Int)(given ctx: Context[?]) : Reference = r match {
   case Idx(i) if (i >= offset) => Num(ctx.idxToNum(i, offset))
   case _ => r
 }
