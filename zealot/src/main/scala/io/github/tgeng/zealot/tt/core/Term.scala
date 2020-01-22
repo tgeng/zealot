@@ -1,6 +1,7 @@
 package io.github.tgeng.zealot.tt.core
 
 import scala.collection.mutable.Buffer
+import io.github.tgeng.zealot.common.flatten
 
 enum Term {
   case Ref(ref: Reference)
@@ -52,6 +53,8 @@ enum Value {
   case Pair(fst: Term, snd: Term)
   case Unit
   case Star
+  case TCon(schema: InductiveTypeSchema, content: Seq[Term])
+  case VCon(schema: InductiveValueSchema, content: Seq[Term])
 }
 
 enum Redux[T] {
@@ -109,7 +112,9 @@ private def (v: Value) raised(given spec: RaiseSpec) : Value = v match {
   case v@Value.Pi(dom, cod) => Value.Pi(dom.raised, cod.raised(given spec++))(v.binder)
   case v@Value.Lam(body) => Value.Lam(body.raised(given spec++))(v.binder)
   case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.raised, sndTy.raised(given spec++))(v.binder)
-  case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.raised, snd.raised)
+  case Value.Pair(fst, snd) => Value.Pair(fst.raised, snd.raised)
+  case Value.TCon(schema, content) => Value.TCon(schema, content.map(_.raised))
+  case Value.VCon(schema, content) => Value.VCon(schema, content.map(_.raised))
   case _ => v
 }
 
@@ -131,7 +136,9 @@ private def (v: Value) substituted(given spec: SubstituteSpec) : Value = v match
   case v@Value.Pi(dom, cod) => Value.Pi(dom.substituted, cod.substituted(given spec++))(v.binder)
   case v@Value.Lam(body) => Value.Lam(body.substituted(given spec++))(v.binder)
   case v@Value.Sig(fstTy, sndTy) => Value.Sig(fstTy.substituted, sndTy.substituted(given spec++))(v.binder)
-  case Value.Pair(fst: Term, snd: Term) => Value.Pair(fst.substituted, snd.substituted)
+  case Value.Pair(fst, snd) => Value.Pair(fst.substituted, snd.substituted)
+  case Value.TCon(schema, content) => Value.TCon(schema, content.map(_.substituted))
+  case Value.VCon(schema, content) => Value.VCon(schema, content.map(_.substituted))
   case _ => v
 }
 
@@ -148,4 +155,14 @@ private case class RaiseSpec(amount: Int, bar: Int) {
 
 private case class SubstituteSpec(targetIndex: Int, substitute: Term) {
   def ++ = SubstituteSpec(targetIndex + 1, substitute.raised(given RaiseSpec(1, 0)))
+}
+
+def flattenPi(t: Term) : (Seq[Term], Term) = t match {
+  case Term.Val(pi@Value.Pi(_, _)) => {
+    flatten(pi, _.dom, p => p.cod match {
+      case Term.Val(np@Value.Pi(_, _)) => Right(np)
+      case nt@_ => Left(nt)
+    })
+  }
+  case _ => (Seq.empty, t)
 }

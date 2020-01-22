@@ -94,6 +94,8 @@ private def (t: Term) toFTermDirectly()(given ctx: Context[String]) : FTerm = {
       case Pair(a, b) => (a.toFTermDirectly(), b.toFTermDirectly())
       case Unit => unit
       case Star => star
+      case TCon(schema, content) => content.foldLeft(qualifiedNameToGlobal(schema.name))((fn, arg) => fn(arg.toFTermDirectly()))
+      case VCon(schema, content) => content.foldLeft(qualifiedNameToGlobal(schema.name))((fn, arg) => fn(arg.toFTermDirectly()))
     }
     case Rdx(r) => r match {
       case App(fn, arg) => (fn.toFTermDirectly())(arg.toFTermDirectly())

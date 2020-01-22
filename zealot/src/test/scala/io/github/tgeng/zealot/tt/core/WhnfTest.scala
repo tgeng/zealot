@@ -9,6 +9,7 @@ import io.github.tgeng.zealot.tt.core.Builder.{given, _}
 class WhnfTest {
 
   given glbCtx: GlobalContext = GlobalContext()
+  given typeCtx: TypeContext = TypeContext()
 
   @Test
   def `value should remain as value` = {
@@ -65,6 +66,33 @@ class WhnfTest {
     glbCtx(root/"def") = (unit, set(0))
 
     t(root/"def") ~~> unit
+  }
+
+  @Test
+  def `inductive type and value` = {
+    val natName = root/"Nat"
+    val nat = t(natName)
+    val zero = t(natName/"Zero")
+    val suc = t(natName/"Suc")
+    val natSchema = natName |: set(0) where {
+      "Zero" |: nat
+      "Suc" |: nat ->: nat
+    }
+
+    zero ~~> vcon(natSchema("Zero"))
+    suc(zero) ~~> vcon(natSchema("Suc"), zero)
+
+    val finName = root/"Fin"
+    val fin = t(finName)
+    val fzero = t(finName/"Zero")
+    val fsuc = t(finName/"Suc")
+    val finSchema = finName |: nat ->: set(0) where {
+      "Zero" |: nat ->: fin(suc(0.ref))
+      "Suc" |: nat ->: fin(0.ref) ->: fin(suc(1.ref))
+    }
+
+    fzero(suc(zero)) ~~> vcon(finSchema("Zero"), suc(zero))
+    fsuc(suc(zero))(fzero(suc(zero))) ~~> vcon(finSchema("Suc"), suc(zero), fzero(suc(zero)))
   }
 
   def (t1: Term) ~~> (t2: Term) = t1 should haveWhnf(t2)

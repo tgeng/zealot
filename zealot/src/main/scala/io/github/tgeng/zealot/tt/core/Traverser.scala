@@ -39,6 +39,8 @@ trait Traverser[T](bindingConstructToT: HasBinder => T) {
     case p@Pair(_, _) => visitPair(p)
     case Unit => visitUnit()
     case Star => visitStar()
+    case tc@TCon(_, _) => visitTCon(tc)
+    case vc@VCon(_, _) => visitVCon(vc)
   }
 
   def visitBinder(b: Binder)(given ctx: Context[T]) : scala.Unit = ()
@@ -66,6 +68,13 @@ trait Traverser[T](bindingConstructToT: HasBinder => T) {
   def visitPair(p: Pair)(given ctx: Context[T]) : scala.Unit = {
     visitTerm(p.fst)
     visitTerm(p.snd)
+  }
+
+  def visitTCon(tc: TCon)(given ctx: Context[T]) : scala.Unit = {
+    tc.content.foreach(visitTerm)
+  }
+  def visitVCon(vc: VCon)(given ctx: Context[T]) : scala.Unit = {
+    vc.content.foreach(visitTerm)
   }
 
   def visitUnit()(given ctx: Context[T]) : scala.Unit = ()

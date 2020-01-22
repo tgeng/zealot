@@ -24,6 +24,16 @@ def (t: Term) inferType()(given ctx: TypeContext)(given glbCtx: GlobalContext) :
   case e: WhnfStuckException => Left(e.toTypeCheckError())
 }
 
+def (t: Whnf) checkSetType()(given errCtx: ErrorContext)(given ctx: TypeContext): Either[TypeCheckError, Int] = t match {
+  case Val(Set(l)) => Right(l)
+  case _ => Left(TypeCheckError(s"Expected $t to be a Set at some level.", errCtx, ctx.snapshot))
+}
+
+def (t: Whnf) checkTConType(schema: InductiveTypeSchema)(given errCtx: ErrorContext)(given ctx: TypeContext): Either[TypeCheckError, Unit] = t match {
+  case Val(TCon(s, content)) if s == schema => Right(())
+  case _ => Left(TypeCheckError(s"Expected $t to be inductive type ${schema.name}.", errCtx, ctx.snapshot))
+}
+
 private def (t: Whnf) checkType(ty: Type)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = {
   given newErrCtx : ErrorContext = errCtx.appended(TypeCheckOps.Check(t, ty))
   (t, ty) match {
@@ -116,8 +126,17 @@ private def (t: Whnf) inferType()(given errCtx: ErrorContext)(given ctx: TypeCon
         case Pair(_, _) => Left(TypeCheckError("Cannot infer type of a pair.", errCtx, ctx.snapshot))
         case Unit => Right(Val(Set(0)))
         case Star => Right(Val(Unit))
+        case TCon(schema, content) => Right(substituteContent(schema.targetType, content))
+        case VCon(schema, content) => Right(substituteContent(schema.targetType, content))
     }
   }
+}
+
+private def substituteContent(targetType: Term, content: Seq[Term])(given errCtx: ErrorContext)(given glbCtx: GlobalContext): Whnf = {
+  val (argTypes, bodyType) = flattenPi(targetType)
+  assert(argTypes.size == content.size)
+  val substitutedBodyType = content.foldRight[Term](bodyType)((arg, bodyType) => bodyType.substituteOpen(arg))
+  substitutedBodyType.whnf
 }
 
 private def (a: Whnf) <= (b: Whnf)(given errCtx: ErrorContext)(given ctx: TypeContext)(given glbCtx: GlobalContext) : Either[TypeCheckError, Unit] = {
@@ -240,9 +259,4 @@ private def (t: Whnf) checkPiType()(given errCtx: ErrorContext)(given ctx: TypeC
 private def (t: Whnf) checkSigType()(given errCtx: ErrorContext)(given ctx: TypeContext): Either[TypeCheckError, (Term, Term)] = t match {
   case Val(Sig(aTy, bTy)) => Right(aTy, bTy)
   case _ => Left(TypeCheckError(s"Expected $t to be a dependent pair type.", errCtx, ctx.snapshot))
-}
-
-private def (t: Whnf) checkSetType()(given errCtx: ErrorContext)(given ctx: TypeContext): Either[TypeCheckError, Int] = t match {
-  case Val(Set(l)) => Right(l)
-  case _ => Left(TypeCheckError(s"Expected $t to be a Set at some level.", errCtx, ctx.snapshot))
 }

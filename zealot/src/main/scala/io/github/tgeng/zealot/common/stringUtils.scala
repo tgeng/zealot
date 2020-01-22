@@ -31,3 +31,8 @@ def (s: String) trimIndent : String = {
   sb.deleteCharAt(sb.size - 1)
   sb.toString
 }
+
+def [T](t: T) printed = {
+  println(t)
+  t
+}

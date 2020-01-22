@@ -34,4 +34,33 @@ object Builder {
   def star = Term.Val(Value.Star)
 
   given unnamedArg : Conversion[Term, (String, Term)] = ft => ("", ft)
+
+  def tcon(schema: InductiveTypeSchema, content: Term*) = Term.Val(Value.TCon(schema, content))
+
+  def vcon(schema: InductiveValueSchema, content: Term*) = Term.Val(Value.VCon(schema, content))
+
+  def (qn: QualifiedName) |: (targetType: Term)(given typeCtx: TypeContext)(given glbCtx: GlobalContext) : InductiveTypeSchema = {
+    val typeSchema = InductiveTypeSchema(qn, targetType)
+    val target : Term = typeSchema.typeConstructor match {
+      case Right(t) => t
+      case Left(e) => throw e
+    }
+    glbCtx(qn) = (target, targetType)
+    typeSchema
+  }
+
+  def (schema: InductiveTypeSchema) where (action: (given typeSchema: InductiveTypeSchema) => Unit) : InductiveTypeSchema = {
+    action(given schema)
+    schema
+  }
+
+  def (vn: String) |: (targetType: Term)(given typeSchema: InductiveTypeSchema)(given typeCtx: TypeContext)(given glbCtx: GlobalContext) : InductiveValueSchema = {
+    val valueSchema = typeSchema.withVCon(vn, targetType)
+    val target : Term = valueSchema.valueConstructor match {
+      case Right(t) => t
+      case Left(e) => throw e
+    }
+    glbCtx(valueSchema.name) = (target, valueSchema.targetType)
+    valueSchema
+  }
 }

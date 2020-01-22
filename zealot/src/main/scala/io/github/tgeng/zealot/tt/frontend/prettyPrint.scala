@@ -1,8 +1,9 @@
 package io.github.tgeng.zealot.tt.frontend
 
 import scala.language.implicitConversions
-import io.github.tgeng.zealot.common.EitherSugar.given
 import scala.collection.mutable.ArrayBuffer
+import io.github.tgeng.zealot.common.flatten
+import io.github.tgeng.zealot.common.EitherSugar.given
 
 case class ToStringSpec(idealLineWidth: Int = 80, indentSize: Int = 2)
 
@@ -202,21 +203,6 @@ private def(ft: FTerm) level : Int = ft match {
     case _: FPrj2 => 9
     case _: FGlobal => 11
   }
-}
-
-private def flatten[T, E, R](t: T, eExtractor: T => E, tExtractor: T => Either[R, T]) : (Seq[E], R) = {
-  val elems = ArrayBuffer[E]()
-  var currentT = t;
-  while(true) {
-    elems += eExtractor(currentT)
-    tExtractor(currentT) match {
-      case Right(nextT) => {
-        currentT = nextT
-      }
-      case Left(r) => return (elems.toSeq, r)
-    }
-  }
-  throw AssertionError()
 }
 
 private case class Block(

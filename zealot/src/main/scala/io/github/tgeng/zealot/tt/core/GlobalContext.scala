@@ -31,5 +31,28 @@ class GlobalContext {
   def getTerm(qn: QualifiedName) = get(qn).map(_._1)
   def getType(qn: QualifiedName) = get(qn).map(_._2)
 
-  def update(qn: QualifiedName, t: (Term, Term)) = content(qn) = t
+  def update(qn: QualifiedName, t: (Term, Term)) = {
+    assert(t._1.raise(1, 0) == t._1)
+    assert(t._2.raise(1, 0) == t._2)
+    content(qn) = t
+  }
+
+  override def toString = {
+    val sb = StringBuilder("GlobalContext{\n")
+    for (entry <- content.toSeq.sortBy(_._1.toString)) {
+      val (qn, (t, ty)) = entry
+      sb.append("  ")
+      sb.append(qn)
+      sb.append(" : ")
+      sb.append(ty)
+      sb.append('\n')
+      sb.append("  ")
+      sb.append(qn)
+      sb.append(" = ")
+      sb.append(t)
+      sb.append('\n')
+    }
+    sb.append("}")
+    sb.toString
+  }
 }
